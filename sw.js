@@ -2,7 +2,7 @@ const CACHE_NAME = "cardapio-v1";
 
 const FILES_TO_CACHE = [
   "./",
-  "./dashboard.html",
+  "./index.html",
   "./manifest.json"
 ];
 
