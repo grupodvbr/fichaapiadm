@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Receitas • Fichas Técnicas</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+:root{
+  --primary:#2563eb;
+  --success:#16a34a;
+  --danger:#dc2626;
+  --bg:#f8fafc;
+  --card:#ffffff;
+  --text:#0f172a;
+  --muted:#64748b;
+  --border:#e5e7eb;
+  --shadow:0 14px 34px rgba(0,0,0,.12);
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:Inter,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+
+/* ================= FILTROS ================= */
+.filters{
+  position:sticky;
+  top:0;
+  z-index:10;
+  background:#fff;
+  padding:14px;
+  display:grid;
+  gap:10px;
+  box-shadow:0 4px 14px rgba(0,0,0,.08);
+}
+
+.filters input,
+.filters select{
+  height:46px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  padding:0 16px;
+  font-size:14px;
+  font-weight:700;
+}
+
+/* ================= GRID ================= */
+.grid{
+  padding:16px;
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+  gap:16px;
+}
+
+/* ================= CARD ================= */
+.card{
+  background:var(--card);
+  border-radius:22px;
+  box-shadow:var(--shadow);
+  overflow:hidden;
+  cursor:pointer;
+  transition:.15s ease;
+}
+
+.card:hover{transform:translateY(-4px)}
+
+.card img{
+  width:100%;
+  height:150px;
+  object-fit:cover;
+}
+
+.card-body{
+  padding:14px;
+}
+
+.card-body h3{
+  margin:0;
+  font-size:15px;
+  font-weight:800;
+}
+
+.badges{
+  display:flex;
+  gap:6px;
+  margin-top:8px;
+}
+
+.badge{
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:800;
+  background:#eef2ff;
+  color:#3730a3;
+}
+
+.badge.ok{background:#dcfce7;color:#166534}
+.badge.warn{background:#fee2e2;color:#991b1b}
+
+/* ================= MODAL ================= */
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(15,23,42,.65);
+  display:none;
+  align-items:flex-end;
+  z-index:20;
+}
+
+.modal-box{
+  background:#fff;
+  width:100%;
+  max-height:94vh;
+  border-radius:22px 22px 0 0;
+  overflow:auto;
+}
+
+.modal img{
+  width:100%;
+  height:200px;
+  object-fit:cover;
+}
+
+.modal-body{
+  padding:18px;
+}
+
+.modal-body h2{
+  margin:0 0 8px;
+  font-size:22px;
+}
+
+.modal-body h3{
+  margin:18px 0 6px;
+}
+
+.modal-body textarea{
+  width:100%;
+  min-height:160px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  padding:14px;
+  font-size:14px;
+  font-weight:700;
+  resize:vertical;
+  text-transform:uppercase;
+}
+
+.modal-body textarea::placeholder{
+  text-transform:uppercase;
+}
+
+.btn{
+  width:100%;
+  height:46px;
+  border:none;
+  border-radius:14px;
+  font-weight:900;
+  letter-spacing:.04em;
+  margin-top:12px;
+  cursor:pointer;
+}
+
+.btn-save{
+  background:linear-gradient(135deg,var(--primary),#1e40af);
+  color:#fff;
+}
+
+.ing{
+  border-bottom:1px dashed var(--border);
+  padding:8px 0;
+  font-size:14px;
+}
+
+.close{
+  position:absolute;
+  top:10px;
+  right:14px;
+  font-size:22px;
+  color:#fff;
+  font-weight:900;
+  cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<!-- ================= FILTROS ================= -->
+<div class="filters">
+  <input id="filtroNome" placeholder="🔍 BUSCAR PRATO">
+  <select id="filtroTipo">
+    <option value="">🍽 TODOS OS TIPOS</option>
+    <option>SUSHI</option>
+    <option>DRINK</option>
+    <option>ENTRADA</option>
+    <option>PRATO PRINCIPAL</option>
+    <option>SOBREMESA</option>
+    <option>ACOMPANHAMENTO</option>
+  </select>
+  <select id="filtroReceita">
+    <option value="">📋 TODAS</option>
+    <option value="COM">COM RECEITA</option>
+    <option value="SEM">SEM RECEITA</option>
+  </select>
+</div>
+
+<div id="cards" class="grid"></div>
+
+<!-- ================= MODAL ================= -->
+<div id="modal" class="modal" onclick="fechar()">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <span class="close" onclick="fechar()">✕</span>
+    <img id="mFoto">
+    <div id="mBody" class="modal-body"></div>
+  </div>
+</div>
+
+<script>
+const sb = supabase.createClient(
+  "https://dxkszikemntfusfyrzos.supabase.co",
+  "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
+);
+
+let pratos = [];
+let pratoAtual = null;
+
+async function carregar(){
+  const { data } = await sb.from("buffet").select("*").order("nome");
+  pratos = data || [];
+  render();
+}
+
+function render(){
+  cards.innerHTML = "";
+
+  const nome = filtroNome.value.toUpperCase();
+  const tipo = filtroTipo.value;
+  const receita = filtroReceita.value;
+
+  for(const p of pratos){
+    if(nome && !p.nome.toUpperCase().includes(nome)) continue;
+    if(tipo && p.tipo !== tipo) continue;
+    if(receita==="COM" && !p.modo_preparo) continue;
+    if(receita==="SEM" && p.modo_preparo) continue;
+
+    const c = document.createElement("div");
+    c.className="card";
+    c.onclick=()=>abrir(p);
+
+    c.innerHTML=`
+      ${p.foto_url ? `<img src="${p.foto_url}">` : ``}
+      <div class="card-body">
+        <h3>${p.nome}</h3>
+        <div class="badges">
+          <span class="badge">${p.tipo||"-"}</span>
+          ${p.modo_preparo
+            ? `<span class="badge ok">COM RECEITA</span>`
+            : `<span class="badge warn">SEM RECEITA</span>`}
+        </div>
+      </div>`;
+    cards.appendChild(c);
+  }
+}
+
+async function abrir(p){
+  pratoAtual = p;
+  modal.style.display="flex";
+  mFoto.src = p.foto_url || "";
+
+  const { data: itens } = await sb
+    .from("buffet_itens")
+    .select("*")
+    .eq("buffet_id", p.id);
+
+  mBody.innerHTML=`
+    <h2>${p.nome}</h2>
+
+    <h3>MODO DE PREPARO</h3>
+    <textarea id="receitaInput"
+      placeholder="DESCREVA A RECEITA COMPLETA AQUI...">${p.modo_preparo||""}</textarea>
+
+    <button class="btn btn-save" onclick="salvarReceita()">
+      SALVAR RECEITA
+    </button>
+
+    <h3>INGREDIENTES</h3>
+    ${itens.map(i=>`
+      <div class="ing">
+        ${i.nome} — ${i.quantidade} ${i.unidade_uso}
+      </div>
+    `).join("")}
+  `;
+}
+
+async function salvarReceita(){
+  const texto = receitaInput.value.trim().toUpperCase();
+  await sb.from("buffet")
+    .update({ modo_preparo: texto })
+    .eq("id", pratoAtual.id);
+
+  await carregar();
+  fechar();
+}
+
+function fechar(){
+  modal.style.display="none";
+}
+
+filtroNome.oninput = render;
+filtroTipo.onchange = render;
+filtroReceita.onchange = render;
+
+carregar();
+</script>
+
+</body>
+</html>

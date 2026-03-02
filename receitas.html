@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Relatório Executivo • CMV</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<style>
+:root{
+  --primary:#2563eb;
+  --primary-dark:#1e40af;
+  --bg:#f4f6fb;
+  --card:#ffffff;
+  --text:#0f172a;
+  --muted:#64748b;
+  --border:#e5e7eb;
+  --radius:22px;
+  --shadow:0 20px 50px rgba(0,0,0,.12);
+}
+
+*{box-sizing:border-box}
+
+html,body{
+  height:100%;
+  margin:0;
+  overflow:hidden;
+  font-family:Inter,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+
+/* HEADER FIXO */
+.header{
+  position:fixed;
+  top:0;
+  left:0;
+  right:0;
+  height:128px;
+  z-index:999;
+  backdrop-filter:blur(10px);
+  background:rgba(244,246,251,.97);
+  border-bottom:1px solid var(--border);
+}
+
+.header-inner{
+  max-width:1400px;
+  margin:auto;
+  padding:14px 18px 12px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.header h1{
+  margin:0;
+  font-size:24px;
+  font-weight:900;
+}
+
+.header p{
+  margin:0;
+  color:var(--muted);
+  font-size:12px;
+  font-weight:600;
+}
+
+/* FILTROS */
+.filters{
+  display:grid;
+  grid-template-columns:2fr 1fr 1fr auto;
+  gap:10px;
+}
+
+.filters input,
+.filters select{
+  height:42px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  padding:0 16px;
+  font-weight:800;
+  font-size:13px;
+  background:#fff;
+}
+
+.btn-export{
+  height:42px;
+  padding:0 22px;
+  border-radius:999px;
+  border:none;
+  cursor:pointer;
+  font-weight:900;
+  font-size:12px;
+  letter-spacing:.08em;
+  color:#fff;
+  background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+  box-shadow:0 10px 24px rgba(37,99,235,.45);
+}
+
+/* CONTEÚDO */
+.main{
+  position:fixed;
+  top:128px;
+  left:0;
+  right:0;
+  bottom:0;
+  overflow:auto;
+  padding:18px;
+}
+
+.table-wrap{
+  background:var(--card);
+  border-radius:22px;
+  border:1px solid var(--border);
+  box-shadow:var(--shadow);
+  overflow:auto;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:1100px;
+}
+
+th, td{
+  padding:12px 10px;
+  border-bottom:1px solid var(--border);
+  font-size:12px;
+  text-align:left;
+}
+
+th{
+  background:#f1f5f9;
+  font-weight:900;
+}
+
+tbody tr:hover{ background:#f8fafc }
+
+@media(max-width:900px){
+  .filters{ grid-template-columns:1fr 1fr }
+  .btn-export{ grid-column:1/-1 }
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <h1>📊 Relatório Executivo de CMV</h1>
+    <p>Resumo financeiro, ficha técnica e simulação de preços</p>
+
+    <div class="filters">
+      <input id="filtroNome" placeholder="Buscar por prato...">
+      <select id="filtroTipo">
+        <option value="">Todos os tipos</option>
+      </select>
+      <select id="filtroStatus">
+        <option value="">Todos</option>
+        <option value="ATIVO">Ativos</option>
+        <option value="INATIVO">Inativos</option>
+      </select>
+      <button class="btn-export" onclick="exportarRelatorio()">📥 EXPORTAR EXCEL</button>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Prato</th>
+          <th>Tipo</th>
+          <th>Status</th>
+          <th>Custo Base</th>
+          <th>Impostos</th>
+          <th>Custo Final</th>
+          <th>Venda</th>
+          <th>Lucro</th>
+          <th>CMV %</th>
+          <th>Margem %</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const sb = supabase.createClient(
+  "https://dxkszikemntfusfyrzos.supabase.co",
+  "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
+);
+
+let pratos=[], itens=[], impostos=[];
+async function fetchAll(table, select){
+  const pageSize = 1000;
+  let from = 0;
+  let to = pageSize - 1;
+  let all = [];
+
+  while (true) {
+    const { data, error } = await sb
+      .from(table)
+      .select(select)
+      .range(from, to);
+
+    if (error) {
+      console.error("Erro ao buscar", table, error);
+      break;
+    }
+
+    if (!data || data.length === 0) break;
+
+    all = all.concat(data);
+
+    if (data.length < pageSize) break; // acabou
+
+    from += pageSize;
+    to += pageSize;
+  }
+
+  return all;
+}
+async function carregarBase(){
+  pratos  = (await sb.from("buffet").select("id,nome,tipo,ativo,preco_venda")).data || [];
+
+  itens = await fetchAll("buffet_itens", "buffet_id,custo_calculado");
+  impostos = await fetchAll("impostos", "buffet_id,modalidade,valor");
+
+  carregarTipos();
+  renderPreview();
+}
+
+function carregarTipos(){
+  const tipos=[...new Set(pratos.map(p=>p.tipo).filter(Boolean))];
+  filtroTipo.innerHTML=`<option value="">Todos os tipos</option>`+
+    tipos.map(t=>`<option value="${t}">${t}</option>`).join("");
+}
+
+function getMapaCustos(){
+  const mapa = {};
+
+  // custo base direto do que foi salvo na ficha técnica
+  itens.forEach(i => {
+    const id = i.buffet_id;
+    if (!id) return;
+
+    mapa[id] ??= { base: 0, impostos: 0 };
+    mapa[id].base += Number(i.custo_calculado || 0);
+  });
+
+  // impostos continuam iguais
+  impostos.forEach(i => {
+    const id = i.buffet_id;
+    if (!id) return;
+
+    mapa[id] ??= { base: 0, impostos: 0 };
+
+    if (i.modalidade === "FIXO") {
+      mapa[id].impostos += Number(i.valor || 0);
+    }
+
+    if (i.modalidade === "PERCENTUAL") {
+      const b = mapa[id]?.base || 0;
+      mapa[id].impostos += (b * Number(i.valor || 0)) / 100;
+    }
+  });
+
+  return mapa;
+}
+
+function getFiltrados(){
+  const nome=filtroNome.value?.toUpperCase()||"";
+  const tipo=filtroTipo.value||"";
+  const status=filtroStatus.value||"";
+  return pratos.filter(p=>{
+    const st=p.ativo?"ATIVO":"INATIVO";
+    if(nome && !p.nome.toUpperCase().includes(nome)) return false;
+    if(tipo && p.tipo!==tipo) return false;
+    if(status && st!==status) return false;
+    return true;
+  });
+}
+
+function renderPreview(){
+  const mapa=getMapaCustos();
+  tbody.innerHTML="";
+  getFiltrados().forEach(p=>{
+const dados = mapa[p.id] || { base: 0, impostos: 0 };
+
+// 🔁 fallback se não tiver ingredientes
+const custoBase = dados.base > 0
+  ? dados.base
+  : Number(p.custo_total || p.custo_unitario || 0);
+
+const custoImpostos = dados.base > 0
+  ? dados.impostos
+  : 0;
+
+const custoFinal =
+  dados.base > 0
+    ? (dados.base + dados.impostos)
+    : Number(p.custo_total || p.custo_unitario || 0);
+
+const venda = Number(p.preco_venda || 0);
+const lucro = venda ? venda - custoFinal : 0;
+
+// ✅ CMV % igual ao painel CMV (só ingredientes)
+const cmv = venda ? (custoBase / venda) * 100 : 0;
+
+// ✅ Margem % igual ao painel CMV
+const margem = venda ? (lucro / venda) * 100 : 0;
+    tbody.innerHTML+=`
+      <tr>
+        <td>${p.nome}</td>
+        <td>${p.tipo||"-"}</td>
+        <td>${p.ativo?"ATIVO":"INATIVO"}</td>
+<td>R$ ${custoBase.toFixed(2)}</td>
+<td>R$ ${custoImpostos.toFixed(2)}</td>
+<td><b>R$ ${custoFinal.toFixed(2)}</b></td>
+<td>R$ ${venda.toFixed(2)}</td>
+<td>R$ ${lucro.toFixed(2)}</td>
+<td>${cmv.toFixed(1)}%</td>
+<td>${margem.toFixed(1)}%</td>
+      </tr>`;
+  });
+}
+
+async function exportarRelatorio(){
+  const mapa=getMapaCustos();
+  const filtrados=getFiltrados();
+  const hoje=new Date().toISOString().slice(0,10);
+
+  const resumo=filtrados.map(p=>{
+const dados = mapa[p.id] || { base: 0, impostos: 0 };
+
+const custoBase = dados.base > 0
+  ? dados.base
+  : Number(p.custo_total || p.custo_unitario || 0);
+
+const custoImpostos = dados.base > 0 ? dados.impostos : 0;
+
+const custoFinal =
+  dados.base > 0
+    ? (dados.base + dados.impostos)
+    : Number(p.custo_total || p.custo_unitario || 0);
+
+const venda = Number(p.preco_venda || 0);
+const lucro = venda ? venda - custoFinal : 0;
+const cmv = venda ? (custoBase / venda) * 100 : 0;
+const margem = venda ? (lucro / venda) * 100 : 0;
+    return {
+      Prato:p.nome, Tipo:p.tipo, Status:p.ativo?"ATIVO":"INATIVO",
+"Custo Base": custoBase.toFixed(2),
+Impostos: custoImpostos.toFixed(2),
+"Custo Final": custoFinal.toFixed(2),
+Venda: venda.toFixed(2),
+Lucro: lucro.toFixed(2),
+"CMV %": cmv.toFixed(2),
+"Margem %": margem.toFixed(2)
+    };
+  });
+
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(resumo),"Resumo Filtrado");
+  XLSX.writeFile(wb,`relatorio_CMV_filtrado_${hoje}.xlsx`);
+}
+
+filtroNome.oninput=renderPreview;
+filtroTipo.onchange=renderPreview;
+filtroStatus.onchange=renderPreview;
+
+carregarBase();
+</script>
+
+</body>
+</html>

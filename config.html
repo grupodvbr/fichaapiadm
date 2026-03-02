@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>CMV • Excel de Precificação</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+:root{
+  --bg:#0f172a;
+  --grid:#1e293b;
+  --card:#020617;
+  --text:#e5e7eb;
+  --muted:#94a3b8;
+  --accent:#22c55e;
+  --danger:#ef4444;
+}
+
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,sans-serif;background:var(--bg);color:var(--text)}
+
+/* HEADER + FILTROS */
+.header{
+  display:flex; flex-wrap:wrap; gap:10px;
+  align-items:center; padding:12px 16px;
+  background:#020617; border-bottom:1px solid var(--grid);
+}
+.header h1{margin:0;font-size:18px;font-weight:900}
+
+.filter, .search{
+  background:#020617; border:1px solid var(--grid); color:var(--text);
+  padding:6px 10px; border-radius:8px; font-weight:700;
+}
+label.chk{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+
+/* TABELA */
+.table-wrap{overflow:auto;height:calc(100vh - 64px)}
+table{border-collapse:collapse;width:100%;min-width:1400px;font-size:13px}
+thead th{position:sticky;top:0;background:#020617;z-index:2}
+th,td{border:1px solid var(--grid);padding:8px 10px;white-space:nowrap}
+tbody tr:hover{background:#020617;cursor:pointer}
+
+input{
+  width:90px;background:#020617;border:1px solid #1e293b;color:#e5e7eb;
+  padding:4px 6px;border-radius:6px;font-weight:700
+}
+input:focus{outline:none;border-color:#22c55e}
+
+.bad{color:#ef4444;font-weight:900}
+.good{color:#22c55e;font-weight:900}
+
+/* MODAL */
+.modal{
+  position:fixed; inset:0; background:rgba(2,6,23,.75);
+  backdrop-filter: blur(6px);
+  display:none; align-items:center; justify-content:center;
+  z-index:9999;
+}
+.modal-box{
+  position:relative; background:#020617; border-radius:22px;
+  max-width:1100px; width:92vw; max-height:92vh; overflow:auto;
+  border:1px solid #1e293b; box-shadow:0 30px 90px rgba(0,0,0,.6);
+}
+.modal-box::-webkit-scrollbar{width:0;height:0}
+.modal-box{scrollbar-width:none}
+
+.modal-header{
+  display:grid; grid-template-columns:360px 1fr; gap:18px;
+  padding:18px; border-bottom:1px solid #1e293b;
+}
+.modal-header img{
+  width:100%; height:100%; min-height:220px; object-fit:cover;
+  border-radius:16px; box-shadow:0 12px 40px rgba(0,0,0,.6);
+}
+.modal-info h2{margin:0 0 6px;font-size:26px;font-weight:900}
+.modal-info p{margin:6px 0;color:var(--muted);font-size:14px}
+.modal-badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.badge{
+  padding:6px 12px;border-radius:999px;font-size:12px;font-weight:900;
+  background:#0b1220;border:1px solid #1e293b;
+}
+.modal-body{padding:16px 18px 22px}
+.ing{display:grid;grid-template-columns:1fr auto;gap:10px;padding:10px 0;border-bottom:1px dashed #1e293b}
+.close{
+  position:absolute; top:12px; right:14px; cursor:pointer;
+  font-weight:900; font-size:22px; background:#020617;
+  border:1px solid #1e293b; padding:6px 10px; border-radius:10px;
+}
+.close:hover{background:#0b1220}
+</style>
+</head>
+
+<body>
+<div class="header">
+  <h1>📊 Excel de Precificação • CMV</h1>
+
+  <select id="filtroTipo" class="filter">
+    <option value="">Todos os tipos</option>
+  </select>
+
+  <label class="chk">
+    <input type="checkbox" id="filtroSemPreco">
+    Sem preço de venda
+  </label>
+
+  <input id="buscaNome" class="search" placeholder="Buscar prato...">
+
+<label class="filter" style="display:flex;align-items:center;gap:8px">
+  📥 Importar vendas
+  <input id="importExcel" type="file" accept=".xlsx,.xls" style="display:none">
+  <button id="btnImportExcel" class="filter" type="button">Selecionar Excel</button>
+</label>
+</div>
+
+<div class="table-wrap">
+<table id="tabela">
+<thead>
+<tr>
+  <th>Prato</th>
+  <th>Tipo</th>
+  <th>Custo Base</th>
+  <th>Custos</th>
+  <th>Custo Final</th>
+<th>Margem alvo %</th>
+  <th>Preço (R$)</th>
+  <th>CMV %</th>
+  <th>Lucro</th>
+  <th>Margem %</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+</div>
+
+<div class="modal" id="modal" onclick="fechar()">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <span class="close" onclick="fechar()">✕</span>
+    <div class="modal-header" id="modalHeader"></div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+const sb = supabase.createClient(
+  "https://dxkszikemntfusfyrzos.supabase.co",
+  "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
+);
+function normalizarCodigo(valor) {
+  return String(valor || "")
+    .replace(/\D/g, "")   // remove letras e símbolos
+    .replace(/^0+/, "");  // remove zeros à esquerda
+}
+const moeda = v => "R$ " + Number(v||0).toLocaleString("pt-BR",{minimumFractionDigits:2});
+
+let cacheCMV = {};
+let pratos = [];
+
+async function carregarCache(){
+  cacheCMV = {};
+  const { data: itens } = await sb.from("buffet_itens").select("buffet_id, custo_calculado, nome, quantidade, unidade_uso");
+  const { data: impostos } = await sb.from("impostos").select("buffet_id, modalidade, valor");
+
+const vistos = new Set();
+
+(itens||[]).forEach(i=>{
+  const chave = `${i.buffet_id}-${i.nome}`;
+  if (vistos.has(chave)) return;
+  vistos.add(chave);
+
+  cacheCMV[i.buffet_id] ??= { base:0, impostos:[], itens:[] };
+
+  const custo = Number(i.custo_calculado || 0); // já vem calculado no banco
+  cacheCMV[i.buffet_id].base += custo;
+
+  cacheCMV[i.buffet_id].itens.push(i);
+});
+  (impostos||[]).forEach(i=>{
+    cacheCMV[i.buffet_id] ??= { base:0, impostos:[], itens:[] };
+    cacheCMV[i.buffet_id].impostos.push(i);
+  });
+}
+
+async function carregarTipos(){
+  const { data } = await sb.from("buffet").select("tipo");
+  const tipos = [...new Set((data||[]).map(i=>i.tipo).filter(Boolean))].sort();
+  filtroTipo.innerHTML = `<option value="">Todos os tipos</option>` +
+    tipos.map(t=>`<option value="${t}">${t}</option>`).join("");
+}
+
+async function carregar(){
+  await carregarCache();
+  await carregarTipos();
+  const { data } = await sb.from("buffet").select("*").order("nome");
+  pratos = data || [];
+  render();
+}
+
+function aplicarFiltros(p){
+  const tipo = filtroTipo.value;
+  const semPreco = filtroSemPreco.checked;
+  const busca = (buscaNome.value||"").toLowerCase().trim();
+
+  if (tipo && p.tipo !== tipo) return false;
+  if (semPreco && Number(p.preco_venda||0) > 0) return false;
+  if (busca && !p.nome.toLowerCase().includes(busca)) return false;
+
+  return true;
+}
+
+function render(){
+  const tbody = document.querySelector("#tabela tbody");
+  tbody.innerHTML = "";
+
+  pratos.filter(aplicarFiltros).forEach(p=>{
+    const d = cacheCMV[p.id] || { base:0, impostos:[], itens:[] };
+    let imp = 0;
+
+    d.impostos.forEach(i=>{
+      if(i.modalidade==="FIXO") imp+=Number(i.valor);
+if (i.modalidade === "PERCENTUAL") {
+imp += (d.base * Number(i.valor)) / 100;}    });
+
+    const custoFinal = d.base + imp;
+    const preco = Number(p.preco_venda||0);
+    const lucro = preco - custoFinal;
+    const cmv = preco ? (custoFinal/preco)*100 : 0;
+const margem = preco ? (lucro / preco) * 100 : 0;
+    const tr = document.createElement("tr");
+    tr.onclick = ()=>abrirModal(p, d, custoFinal, cmv, lucro, margem);
+
+    tr.innerHTML = `
+      <td>${p.nome}</td>
+      <td>${p.tipo||"-"}</td>
+      <td>${moeda(d.base)}</td>
+      <td>${moeda(imp)}</td>
+      <td>${moeda(custoFinal)}</td>
+      <td>
+<input type="number" step="0.01" placeholder="%"
+  onclick="event.stopPropagation()"
+  onchange="precificarPerc(this, ${custoFinal}, '${p.id}')"
+  value="${preco ? margem.toFixed(1) : ''}">
+      </td>
+      <td>
+        <input type="number" step="0.01" placeholder="R$"
+          onclick="event.stopPropagation()"
+          onblur="precificarValor(this, ${custoFinal}, '${p.id}')"
+          value="${preco?preco.toFixed(2):''}">
+      </td>
+      <td class="${cmv>35?'bad':'good'}">${cmv.toFixed(1)}%</td>
+      <td class="${lucro<0?'bad':'good'}">${moeda(lucro)}</td>
+<td class="${custoFinal === 0 ? 'bad' : (margem < 30 ? 'bad' : 'good')}">
+  ${custoFinal === 0 ? 'Cadastre o custo' : margem.toFixed(1) + '%'}
+</td>    `;
+    tbody.appendChild(tr);
+  });
+}
+
+async function precificarPerc(input, custo, id){
+const mk = Number(input.value || 0);
+if (mk <= 0 || mk >= 95) {
+  alert("Use uma margem entre 1% e 95%");
+  return;
+}
+const margem = mk / 100;
+const preco = custo / (1 - margem);
+  
+  await sb.from("buffet").update({ preco_venda: preco }).eq("id", id);
+  carregar();
+}
+
+async function precificarValor(input, custo, id){
+  const preco = Number(input.value||0);
+  if(preco<=custo) return alert("Preço inválido");
+  await sb.from("buffet").update({ preco_venda: preco }).eq("id", id);
+  carregar();
+}
+
+function abrirModal(p, d, custo, cmv, lucro, margem){
+  modal.style.display="flex";
+
+const codigo = normalizarCodigo(p.codigo_varejo);
+const vendasProduto = vendasExcel.filter(v => v.codigo === codigo);
+function normalizarData(valor) {
+  if (!valor) return "Sem data";
+
+  // Número do Excel (ex: 45236)
+  if (typeof valor === "number") {
+    const d = new Date(Math.round((valor - 25569) * 86400 * 1000));
+    return d.toISOString().slice(0,10);
+  }
+
+  // String BR: 05/02/2026
+  if (typeof valor === "string" && valor.includes("/")) {
+    const [dia, mes, ano] = valor.split("/");
+    return `${ano}-${mes.padStart(2,"0")}-${dia.padStart(2,"0")}`;
+  }
+
+  // ISO
+  return String(valor).slice(0,10);
+}
+
+const vendasPorDia = {};
+vendasProduto.forEach(v => {
+  const dia = normalizarData(v.data);
+  vendasPorDia[dia] ??= 0;
+  vendasPorDia[dia] += Number(v.valor || 0);
+});
+
+  const labels = Object.keys(vendasPorDia).sort();
+  const valores = labels.map(d => vendasPorDia[d]);
+
+modalHeader.innerHTML = `
+  <img src="${p.foto_url||'https://placehold.co/800x400?text=Sem+Foto'}">
+
+  <div>
+    <div class="modal-info">
+      <h2>${p.nome}</h2>
+      <p>${p.tipo||""}</p>
+
+      <div class="modal-badges">
+        <span class="badge">💰 Venda ${moeda(p.preco_venda)}</span>
+        <span class="badge">🧾 Custo ${moeda(custo)}</span>
+        <span class="badge">📈 Margem ${margem.toFixed(1)}%</span>
+        <span class="badge">📊 CMV ${cmv.toFixed(1)}%</span>
+      </div>
+
+      <div class="modal-badges" style="margin-top:10px">
+        <span class="badge">🏷 Código cadastrado: <b>${codigo || "—"}</b></span>
+        <span class="badge">📥 Vendas encontradas: <b>${vendasProduto.length}</b></span>
+      </div>
+
+      <div class="modal-badges" style="margin-top:6px">
+        <span class="badge">📦 Códigos no Excel:</span>
+        ${
+          [...new Set(vendasExcel.map(v => v.codigo))]
+            .slice(0,5)
+            .map(c => `<span class="badge">${c || "—"}</span>`)
+            .join("")
+        }
+      </div>
+    </div>
+
+    <canvas id="graficoVendas" height="120" style="margin-top:14px"></canvas>
+  </div>
+`;
+setTimeout(() => {
+  const ctx = document.getElementById("graficoVendas")?.getContext("2d");
+  if (!ctx) return;
+
+  // limpa gráfico anterior (se abrir outro produto)
+  if (window._graficoVendas) {
+    window._graficoVendas.destroy();
+  }
+
+  window._graficoVendas = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [{
+        label: "Vendas (R$)",
+        data: valores,
+        borderWidth: 2,
+        tension: .35,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: "#94a3b8" } },
+        y: { ticks: { color: "#94a3b8" } }
+      }
+    }
+  });
+}, 50);
+  modalBody.innerHTML = `
+    <h3>Ingredientes</h3>
+    ${d.itens.map(i=>`
+      <div class="ing">
+        <span>${i.nome} (${i.quantidade} ${i.unidade_uso})</span>
+<b>${moeda(Number(i.custo_calculado || 0))}</b>
+</div>
+    `).join("")}
+
+    <h3 style="margin-top:18px">Descrição</h3>
+    <p>${p.descricao||"-"}</p>
+
+    <h3>Modo de preparo</h3>
+    <p>${p.modo_preparo||"-"}</p>
+  `;
+}
+
+function fechar(){ modal.style.display="none"; }
+
+filtroTipo.onchange = render;
+filtroSemPreco.onchange = render;
+buscaNome.oninput = render;
+
+carregar();
+
+document.getElementById("btnImportExcel").onclick = () => {
+  document.getElementById("importExcel").click();
+};
+
+let vendasExcel = JSON.parse(localStorage.getItem("vendas_excel") || "[]");
+
+document.getElementById("importExcel").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const data = await file.arrayBuffer();
+  const wb = XLSX.read(data, { type: "array" });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const json = XLSX.utils.sheet_to_json(ws, { defval: "" });
+
+vendasExcel = json.map(r => ({
+  codigo: normalizarCodigo(r["Código"] || r.Codigo || r.CODIGO || ""),
+  quantidade: Number(r["Quantidade"] || 0),
+  valor: Number(
+    String(r["Faturamento"] || 0)
+      .replace("R$", "")
+      .replace(".", "")
+      .replace(",", ".")
+  ),
+  data: extrairDataDoTitulo(json)
+}));
+
+console.table(vendasExcel.slice(0, 10)); // debug
+
+
+  localStorage.setItem("vendas_excel", JSON.stringify(vendasExcel));
+  alert("📊 Excel de vendas importado com sucesso!");
+});
+
+
+
+
+  function extrairDataDoTitulo(json) {
+  const linhaComData = Object.values(json[0] || {}).find(v =>
+    typeof v === "string" && v.includes("Data:")
+  );
+
+  if (!linhaComData) return new Date().toISOString().slice(0, 10);
+
+  const m = linhaComData.match(/(\d{2}\/\d{2}\/\d{4})/);
+  if (!m) return new Date().toISOString().slice(0, 10);
+
+  const [d, mth, y] = m[1].split("/");
+  return `${y}-${mth}-${d}`;
+}
+</script>
+</body>
+</html>

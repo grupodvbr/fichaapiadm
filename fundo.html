@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Sistema de Ficha Técnica & CMV • Premium</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#0b1220;
+  --bg-soft:#0f172a;
+  --card:#0b1a33;
+  --border:#1f2a44;
+  --text:#e5e7eb;
+  --muted:#94a3b8;
+  --primary:#22c55e;
+  --accent:#38bdf8;
+  --warn:#f59e0b;
+  --danger:#ef4444;
+  --radius:18px;
+  --shadow:0 30px 80px rgba(0,0,0,.45);
+  --glow:0 0 40px rgba(56,189,248,.25);
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;background:
+  radial-gradient(1200px 600px at 10% -10%, rgba(56,189,248,.12), transparent 40%),
+  radial-gradient(900px 500px at 90% 10%, rgba(34,197,94,.12), transparent 40%),
+  linear-gradient(180deg,#020617,#0b1220 40%,#020617);
+color:var(--text);font-family:Inter,system-ui}
+a{color:inherit;text-decoration:none}
+.container{
+  max-width:none;
+  width:100%;
+  height:100%;
+  margin:0;
+  padding:0;
+}
+  .header{
+  display:none !important;
+}
+.nav{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:.4px}
+.logo{
+  width:36px;height:36px;border-radius:10px;
+  background: linear-gradient(135deg, var(--accent), var(--primary));
+  box-shadow: var(--glow);
+  display:grid;place-items:center;font-weight:900;color:#02121f
+}
+.nav .cta{display:flex;gap:10px}
+.btn{
+  border:1px solid var(--border);background:linear-gradient(180deg,#0b1a33,#081428);
+  padding:10px 14px;border-radius:12px;color:#e5e7eb;
+  display:inline-flex;align-items:center;gap:8px;cursor:pointer;
+  transition:.2s ease; box-shadow: 0 10px 30px rgba(0,0,0,.35);
+}
+.btn.primary{border-color:transparent;background:linear-gradient(135deg,var(--accent),var(--primary));color:#03111f;font-weight:800}
+.btn:hover{transform:translateY(-1px);filter:brightness(1.08)}
+
+.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:26px;align-items:center;margin-top:24px}
+.hero h1{font-size:44px;line-height:1.05;margin:0}
+.hero p{color:var(--muted);font-size:18px}
+.badges{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0}
+.badge{
+  padding:8px 12px;border-radius:999px;border:1px solid var(--border);
+  background:rgba(56,189,248,.08)
+}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+.kpi{
+  background:linear-gradient(180deg,#0b1a33,#081428);
+  border:1px solid var(--border);border-radius:16px;padding:14px;
+}
+.kpi strong{font-size:22px}
+.kpi span{color:var(--muted);font-size:12px}
+
+.mock{
+  background:linear-gradient(180deg,#0b1a33,#081428);
+  border:1px solid var(--border);border-radius:20px;padding:14px;
+  box-shadow:var(--shadow);
+}
+.mock .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.chips{display:flex;gap:8px}
+.chip{padding:6px 10px;border-radius:999px;border:1px solid var(--border);font-size:12px;color:var(--muted)}
+.grid{
+  display:grid;grid-template-columns:2fr 1fr;gap:12px
+}
+.panel{
+  background:linear-gradient(180deg,#0b1a33,#081428);
+  border:1px solid var(--border);border-radius:14px;padding:12px
+}
+.chart{
+  height:140px;border-radius:10px;
+  background:linear-gradient(180deg,rgba(56,189,248,.18),rgba(34,197,94,.18));
+  position:relative;overflow:hidden
+}
+.line{
+  position:absolute;inset:0;
+  background: linear-gradient(90deg, transparent 10%, rgba(255,255,255,.35), transparent 30%);
+  animation: shimmer 2.2s infinite;
+}
+@keyframes shimmer{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+.stat{
+  border:1px solid var(--border);border-radius:12px;padding:10px;text-align:center
+}
+.stat .v{font-weight:900}
+.stat .l{font-size:12px;color:var(--muted)}
+
+.section{margin:48px 0}
+.section h2{margin:0 0 12px}
+.features{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.feature{
+  background:linear-gradient(180deg,#0b1a33,#081428);
+  border:1px solid var(--border);border-radius:16px;padding:14px;transition:.2s
+}
+.feature:hover{transform:translateY(-2px);box-shadow:var(--glow)}
+.feature i{font-size:22px;color:var(--accent)}
+
+.carousel{
+  position:relative;overflow:hidden;border-radius:16px;border:1px solid var(--border)
+}
+.track{display:flex;gap:12px;transition:transform .4s ease;padding:12px}
+.card{
+  min-width:220px;background:#081428;border:1px solid var(--border);
+  border-radius:14px;overflow:hidden
+}
+.card img{width:100%;height:120px;object-fit:cover}
+.card .p{padding:10px}
+.p .t{font-weight:800}
+.p .m{font-size:12px;color:var(--muted)}
+.navc{
+  position:absolute;top:50%;transform:translateY(-50%);
+  background:rgba(2,6,23,.7);border:1px solid var(--border);
+  width:36px;height:36px;border-radius:50%;display:grid;place-items:center;cursor:pointer
+}
+.navc.left{left:8px} .navc.right{right:8px}
+
+.footer{
+  border-top:1px solid var(--border);padding:28px 0;color:var(--muted);
+  display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap
+}
+
+@media (max-width: 980px){
+  .hero{grid-template-columns:1fr}
+  .features{grid-template-columns:repeat(2,1fr)}
+}
+
+/* A página não rola */
+html, body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+/* Só o main.container rola */
+main.container {
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Esconde a barra de rolagem do main */
+main.container::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+main.container {
+  scrollbar-width: none;      /* Firefox */
+  -ms-overflow-style: none;  /* IE antigo */
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="container nav">
+    <div class="brand">
+      <div class="logo">CMV</div>
+      <div>Sistema de Ficha Técnica & CMV</div>
+    </div>
+    <div class="cta">
+<a class="btn" href="https://wa.me/5577998253249" target="_blank">
+  <i class="ri-whatsapp-line"></i> Solicitar Orçamento
+</a>
+      <button class="btn primary"><i class="ri-rocket-2-line"></i> Começar</button>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <section class="hero">
+    <div>
+      <h1>Controle o custo real de cada prato e <span style="color:var(--primary)">aumente seu lucro</span></h1>
+      <p>CMV automático, ficha técnica completa e precificação inteligente. Tudo em tempo real para restaurantes, buffets e bares.</p>
+      <div class="badges">
+        <div class="badge">CMV automático</div>
+        <div class="badge">Precificação inteligente</div>
+        <div class="badge">Controle de desperdício</div>
+        <div class="badge">Lucro em tempo real</div>
+      </div>
+
+      <div class="kpis">
+        <div class="kpi"><strong id="kpi1">16%</strong><br><span>CMV médio</span></div>
+        <div class="kpi"><strong id="kpi2">R$ 12.430</strong><br><span>Lucro mensal</span></div>
+        <div class="kpi"><strong id="kpi3">+30%</strong><br><span>Ganho potencial</span></div>
+      </div>
+    </div>
+
+    <div class="mock">
+      <div class="top">
+        <strong>Dashboard</strong>
+        <div class="chips">
+          <span class="chip">Hoje</span><span class="chip">Semana</span><span class="chip">Mês</span>
+        </div>
+      </div>
+      <div class="grid">
+        <div class="panel">
+          <div class="chart"><div class="line"></div></div>
+          <div class="stats">
+            <div class="stat"><div class="v">28.4%</div><div class="l">CMV</div></div>
+            <div class="stat"><div class="v">R$ 3.581</div><div class="l">Custo</div></div>
+            <div class="stat"><div class="v">R$ 12.430</div><div class="l">Lucro</div></div>
+          </div>
+        </div>
+        <div class="panel">
+          <strong>Ficha Técnica</strong>
+          <p class="m">Lasagna • Porção 1 • CMV 16%</p>
+          <div class="stat"><div class="v">R$ 400</div><div class="l">Custo unitário</div></div>
+          <div class="stat" style="margin-top:8px"><div class="v" style="color:var(--primary)">OK</div><div class="l">Margem saudável</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Benefícios</h2>
+    <div class="features">
+      <div class="feature"><i class="ri-calculator-line"></i><h4>CMV automático</h4><p class="m">Cálculo em tempo real por prato.</p></div>
+      <div class="feature"><i class="ri-price-tag-3-line"></i><h4>Precificação</h4><p class="m">Sugestão de preço ideal.</p></div>
+      <div class="feature"><i class="ri-leaf-line"></i><h4>Desperdício</h4><p class="m">Reduza perdas com dados.</p></div>
+      <div class="feature"><i class="ri-line-chart-line"></i><h4>Lucro</h4><p class="m">Visualize margens.</p></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Exemplos de pratos (interativo)</h2>
+    <div class="carousel">
+      <div class="track" id="track">
+        <div class="card">
+          <img src="https://images.unsplash.com/photo-1604908177225-9f78c8f9f6e5?q=80&w=1200&auto=format&fit=crop" />
+          <div class="p"><div class="t">Arroz Oriental</div><div class="m">CMV 16% • Lucro R$ 5.886</div></div>
+        </div>
+        <div class="card">
+          <img src="https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1200&auto=format&fit=crop" />
+          <div class="p"><div class="t">Carpaccio de Salmão</div><div class="m">CMV 14,6% • Lucro R$ 5.941</div></div>
+        </div>
+        <div class="card">
+          <img src="https://images.unsplash.com/photo-1551024709-8f23befc6cf7?q=80&w=1200&auto=format&fit=crop" />
+          <div class="p"><div class="t">Whisky Sour</div><div class="m">CMV 32% • Lucro R$ 3.581</div></div>
+        </div>
+        <div class="card">
+          <img src="https://images.unsplash.com/photo-1523905330026-b8bd1f5f320e?q=80&w=1200&auto=format&fit=crop" />
+          <div class="p"><div class="t">Cosmopolitan</div><div class="m">CMV 32% • Lucro R$ 28.996</div></div>
+        </div>
+        <div class="card">
+          <img src="https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?q=80&w=1200&auto=format&fit=crop" />
+          <div class="p"><div class="t">Guioza</div><div class="m">CMV 10% • Lucro R$ 13.342</div></div>
+        </div>
+      </div>
+      <div class="navc left" onclick="move(-1)"><i class="ri-arrow-left-s-line"></i></div>
+      <div class="navc right" onclick="move(1)"><i class="ri-arrow-right-s-line"></i></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="panel" style="text-align:center">
+      <h2>🔥 Aumente seu lucro em até <span style="color:var(--primary)">30%</span></h2>
+      <p class="m">Testado em restaurantes reais</p>
+      <div style="display:flex;gap:10px;justify-content:center;margin-top:10px">
+        <button class="btn primary"><i class="ri-rocket-2-line"></i> Quero usar agora</button>
+        <button class="btn"><i class="ri-video-line"></i> Ver demonstração</button>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div>© 2026 • Sistema de Ficha Técnica & CMV</div>
+    <div style="display:flex;gap:10px">
+      <span class="badge">Desktop Ready</span>
+      <span class="badge">Premium UI</span>
+    </div>
+  </footer>
+</main>
+
+<script>
+
+
+  const receitas = {
+
+"Arroz Oriental":{
+img:"https://images.unsplash.com/photo-1604908177225-9f78c8f9f6e5?q=80&w=1200&auto=format&fit=crop",
+descricao:"Arroz japonês salteado com legumes frescos e molho shoyu artesanal.",
+ingredientes:[
+["Arroz japonês","200g","R$ 2,20"],
+["Cenoura","50g","R$ 0,40"],
+["Ervilha","40g","R$ 0,35"],
+["Shoyu","30ml","R$ 0,55"],
+["Óleo de gergelim","10ml","R$ 0,30"]
+],
+custo:6.80,
+venda:29.90,
+modo:"Cozinhar o arroz. Saltear os legumes. Incorporar o shoyu e finalizar com óleo de gergelim.",
+nutri:["Calorias 420 kcal","Proteínas 8g","Carboidratos 78g","Gorduras 9g","Fibras 4g","Sódio 620mg"]
+},
+
+"Carpaccio de Salmão":{
+img:"https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1200&auto=format&fit=crop",
+descricao:"Salmão fresco laminado, alcaparras, azeite extravirgem e toque cítrico.",
+ingredientes:[
+["Salmão fresco","150g","R$ 14,50"],
+["Alcaparras","20g","R$ 1,20"],
+["Azeite","20ml","R$ 1,10"],
+["Limão siciliano","1 un","R$ 1,70"]
+],
+custo:18.50,
+venda:69.90,
+modo:"Laminado fino, finalizar com azeite, alcaparras e raspas de limão.",
+nutri:["Calorias 360 kcal","Proteínas 34g","Carboidratos 4g","Gorduras 22g","Fibras 1g","Sódio 480mg"]
+},
+
+"Whisky Sour":{
+img:"https://images.unsplash.com/photo-1551024709-8f23befc6cf7?q=80&w=1200&auto=format&fit=crop",
+descricao:"Coquetel clássico com whisky, limão e açúcar.",
+ingredientes:[
+["Whisky","50ml","R$ 5,80"],
+["Suco de limão","30ml","R$ 0,60"],
+["Açúcar","15g","R$ 0,20"],
+["Gelo","—","R$ 0,60"]
+],
+custo:7.20,
+venda:32.00,
+modo:"Agitar na coqueteleira com gelo e servir coado.",
+nutri:["Calorias 210 kcal","Proteínas 0g","Carboidratos 12g","Gorduras 0g","Fibras 0g","Sódio 5mg"]
+},
+
+"Cosmopolitan":{
+img:"https://images.unsplash.com/photo-1523905330026-b8bd1f5f320e?q=80&w=1200&auto=format&fit=crop",
+descricao:"Vodka premium, cranberry e triple sec.",
+ingredientes:[
+["Vodka","50ml","R$ 4,80"],
+["Cranberry","40ml","R$ 1,10"],
+["Triple Sec","20ml","R$ 0,70"],
+["Limão","1 un","R$ 0,30"]
+],
+custo:6.90,
+venda:34.00,
+modo:"Bater com gelo e servir em taça martini.",
+nutri:["Calorias 190 kcal","Proteínas 0g","Carboidratos 14g","Gorduras 0g","Fibras 0g","Sódio 3mg"]
+},
+
+"Guioza":{
+img:"https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?q=80&w=1200&auto=format&fit=crop",
+descricao:"Guioza artesanal recheado com carne suína temperada.",
+ingredientes:[
+["Massa guioza","10 un","R$ 3,20"],
+["Carne suína","150g","R$ 4,80"],
+["Cebolinha","20g","R$ 0,50"],
+["Gengibre","10g","R$ 0,40"],
+["Shoyu","20ml","R$ 0,90"]
+],
+custo:9.80,
+venda:39.90,
+modo:"Rechear, selar na frigideira e finalizar no vapor.",
+nutri:["Calorias 480 kcal","Proteínas 28g","Carboidratos 50g","Gorduras 18g","Fibras 3g","Sódio 710mg"]
+}
+
+};
+
+document.querySelectorAll('.card').forEach(card=>{
+card.addEventListener('click',()=>{
+const nome = card.querySelector('.t').innerText;
+abrirFicha(nome);
+});
+});
+
+function abrirFicha(nome){
+const r = receitas[nome];
+if(!r) return;
+
+const lucro = r.venda - r.custo;
+const cmv = (r.custo / r.venda) * 100;
+const margem = (lucro / r.venda) * 100;
+
+document.getElementById("modalTitulo").innerText = nome;
+document.getElementById("modalImagem").src = r.img;
+document.getElementById("modalDescricao").innerText = r.descricao;
+document.getElementById("modalModo").innerText = r.modo;
+
+document.getElementById("modalKpis").innerHTML = `
+<div class="stat"><div class="v">R$ ${r.custo.toFixed(2)}</div><div class="l">Custo</div></div>
+<div class="stat"><div class="v">R$ ${r.venda.toFixed(2)}</div><div class="l">Venda</div></div>
+<div class="stat"><div class="v">${cmv.toFixed(1)}%</div><div class="l">CMV</div></div>
+<div class="stat"><div class="v">${margem.toFixed(1)}%</div><div class="l">Margem</div></div>
+`;
+
+document.getElementById("modalTabela").innerHTML = `
+<tr style="border-bottom:1px solid #1f2a44">
+<th align="left">Ingrediente</th>
+<th align="left">Qtd</th>
+<th align="left">Custo</th>
+</tr>
+${r.ingredientes.map(i=>`
+<tr style="border-bottom:1px solid #1f2a44">
+<td>${i[0]}</td>
+<td>${i[1]}</td>
+<td>${i[2]}</td>
+</tr>
+`).join("")}
+`;
+
+document.getElementById("modalNutri").innerHTML =
+r.nutri.map(n=>`
+<div class="stat"><div class="v">${n}</div></div>
+`).join("");
+
+document.getElementById("modalFicha").style.display="flex";
+}
+
+function fecharModal(){
+document.getElementById("modalFicha").style.display="none";
+}
+let index = 0;
+function move(dir){
+  const track = document.getElementById('track');
+  const cardW = 232; // largura + gap
+  index = Math.max(0, Math.min(index + dir, 3));
+  track.style.transform = `translateX(${-index * cardW}px)`;
+}
+
+// KPIs animados (efeito premium)
+const counters = [
+  { el: document.getElementById('kpi1'), to: 16, suf:'%' },
+  { el: document.getElementById('kpi2'), to: 12430, pref:'R$ ' },
+  { el: document.getElementById('kpi3'), to: 30, suf:'%' }
+];
+counters.forEach(c=>{
+  let v=0; const step=Math.max(1, Math.floor(c.to/40));
+  const t=setInterval(()=>{
+    v+=step; if(v>=c.to){v=c.to; clearInterval(t);}
+    c.el.textContent = (c.pref||'') + v.toLocaleString('pt-BR') + (c.suf||'');
+  },30);
+});
+
+
+function requestFull(){
+  const el = document.documentElement;
+  if (el.requestFullscreen) el.requestFullscreen();
+  else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+}
+document.addEventListener("click", () => {
+  if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+    requestFull();
+  }
+}, { once:true });
+
+</script>
+
+<div id="modalFicha" style="
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.85);
+display:none;
+align-items:center;
+justify-content:center;
+z-index:9999;
+backdrop-filter:blur(8px);
+">
+
+<div style="
+width:96vw;
+max-width:1400px;
+max-height:92vh;
+overflow:auto;
+background:linear-gradient(180deg,#0b1a33,#081428);
+border-radius:22px;
+padding:30px;
+border:1px solid #1f2a44;
+box-shadow:0 60px 140px rgba(0,0,0,.8);
+">
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+<h2 id="modalTitulo" style="font-size:28px"></h2>
+<button onclick="fecharModal()" style="
+background:#ef4444;
+border:none;
+color:#fff;
+padding:8px 16px;
+border-radius:10px;
+cursor:pointer;
+font-weight:600;
+">Fechar</button>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1.3fr;gap:30px">
+
+<div>
+<img id="modalImagem" style="
+width:100%;
+height:320px;
+object-fit:cover;
+border-radius:16px;
+border:1px solid #1f2a44;
+">
+
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:15px" id="modalKpis"></div>
+</div>
+
+<div>
+<p id="modalDescricao" style="color:#94a3b8;margin-bottom:20px"></p>
+
+<h3>Ingredientes</h3>
+<table style="width:100%;margin-top:10px;border-collapse:collapse" id="modalTabela"></table>
+
+<h3 style="margin-top:25px">Modo de Preparo</h3>
+<p id="modalModo" style="color:#cbd5e1"></p>
+
+<h3 style="margin-top:25px">Tabela Nutricional (estimada)</h3>
+<div id="modalNutri" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px"></div>
+
+</div>
+
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/jobs/sync-vendas-dia",
+      "schedule": "0 2 * * *"
+    }
+  ]
+}

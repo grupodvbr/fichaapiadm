@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>CB SYSTEMS®</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00c2b8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+:root{
+  --bg:#0b1220; 
+  --card:#020617; 
+  --grid:#1e293b;
+  --text:#e5e7eb; 
+  --muted:#94a3b8;
+  --accent:#22c55e; 
+  --gold:#f59e0b; 
+  --danger:#ef4444;
+  --radius:22px; 
+  --shadow:0 30px 90px rgba(0,0,0,.55);
+}
+
+*{box-sizing:border-box}
+
+html,body{
+  margin:0; 
+  width:100%; 
+  height:100%;
+  font-family:Inter,system-ui,Arial,sans-serif;
+  color:var(--text);
+  overflow-x:hidden; /* corrigido */
+}
+
+/* ================= HERO ================= */
+
+.login-hero.hero-image{
+  position:fixed; 
+  inset:0;
+  background: radial-gradient(1200px 600px at 10% -10%, #0b1220 0%, #020617 60%);
+}
+
+.hero-overlay{
+  width:100%; 
+  height:100%;
+  background:
+    linear-gradient(180deg, rgba(2,6,23,.25), rgba(2,6,23,.45)),
+    radial-gradient(800px 400px at 20% 0%, rgba(34,197,94,.15), transparent 60%);
+  padding:14px 24px;
+}
+
+.hero-frame{
+  max-width: 96vw;
+  height: calc(100vh - 110px);
+  margin: 14px auto 0;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow:
+    0 30px 90px rgba(0,0,0,.65),
+    inset 0 0 0 1px rgba(255,255,255,.06);
+  background: #020617;
+  position: relative;
+}
+
+.hero-frame::before{
+  content:"";
+  position:absolute; 
+  inset:0;
+  background:
+    linear-gradient(180deg, rgba(2,6,23,.10), rgba(2,6,23,.25)),
+    radial-gradient(800px 400px at 20% 0%, rgba(34,197,94,.12), transparent 60%);
+  pointer-events:none;
+}
+
+.hero-top{
+  max-width:1400px; 
+  margin:0 auto;
+  display:flex; 
+  align-items:center; 
+  justify-content:space-between; 
+  gap:20px;
+}
+
+.hero-title h1{
+  margin:0;
+  font-size:28px;
+  font-weight:900;
+  letter-spacing:-.01em;
+  color:#ffffff;
+  text-shadow:
+    0 2px 12px rgba(0,0,0,.55),
+    0 0 22px rgba(34,197,94,.25);
+}
+
+.hero-title p{
+  margin:4px 0 0;
+  color:#cbd5e1;
+  font-size:13px;
+  font-weight:600;
+}
+
+.hero-actions{
+  display:flex; 
+  gap:12px; 
+  flex-wrap:wrap
+}
+
+.btn{
+  border-radius:999px;
+  padding:9px 14px;
+  font-weight:800;
+  font-size:12px;
+  letter-spacing:.04em;
+  cursor:pointer;
+}
+
+.btn.primary{
+  border:none; 
+  color:#022c22;
+  background:linear-gradient(135deg,#22c55e,#16a34a);
+  box-shadow:0 16px 44px rgba(34,197,94,.45);
+}
+
+/* ================= MODAL ================= */
+
+.modal{
+  position:fixed; 
+  inset:0; 
+  display:none; 
+  place-items:center;
+  background:rgba(2,6,23,.7); 
+  backdrop-filter: blur(8px); 
+  z-index:999;
+}
+
+.modal.open{display:grid}
+
+.modal-box{
+  width:100%; 
+  max-width:420px;
+  background:#020617; 
+  border:1px solid var(--grid);
+  border-radius:26px; 
+  padding:26px; 
+  box-shadow:var(--shadow); 
+  position:relative;
+}
+
+.modal-box h2{
+  margin:0 0 8px; 
+  font-weight:900
+}
+
+.modal-box p{
+  color:var(--muted); 
+  margin:0 0 12px
+}
+
+.field label{
+  font-size:12px; 
+  font-weight:800; 
+  letter-spacing:.08em; 
+  color:#cbd5f5
+}
+
+.field input{
+  width:100%; 
+  margin-top:6px; 
+  padding:14px 16px;
+  border-radius:14px; 
+  border:1px solid var(--grid);
+  background:#0b1220; 
+  color:#fff; 
+  outline:none;
+}
+
+.actions{
+  margin-top:16px; 
+  display:flex; 
+  gap:10px
+}
+
+.close{
+  position:absolute; 
+  right:14px; 
+  top:12px; 
+  cursor:pointer; 
+  font-weight:900; 
+  opacity:.8
+}
+
+/* ================= APP ================= */
+
+.app{
+  display:grid; 
+  grid-template-columns:88px 1fr; 
+  height:100vh; 
+  display:none
+}
+
+.sidebar{
+  background:linear-gradient(180deg,#00c2b8,#00a6a0);
+  display:flex; 
+  flex-direction:column; 
+  align-items:center; 
+  padding:22px 0; 
+  gap:18px
+}
+
+.icon{
+  width:60px;
+  min-height:64px;
+  border-radius:16px;
+  background:rgba(255,255,255,.35);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  cursor:pointer;
+  transition:.2s;
+  padding:6px 4px;
+  text-align:center;
+}
+
+.icon small{
+  font-size:9px;
+  font-weight:700;
+  letter-spacing:.04em;
+  color:#ffffff;
+  opacity:.9;
+}
+
+.icon.active small{
+  color:#00a6a0;
+}
+
+/* ================= MAIN ================= */
+
+.main{
+  display:flex;
+  flex-direction:column;
+  height:100%
+}
+
+.header{
+  height:68px;
+  background:#e6f7f7;
+  color:#020617;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 24px;
+  font-weight:800;
+}
+
+#pageTitle{
+  color:#020617;
+}
+
+.logout{
+  background:#ef4444;
+  border:none;
+  padding:8px 14px;
+  border-radius:12px;
+  color:#fff;
+  font-weight:700;
+  cursor:pointer
+}
+
+iframe{
+  flex:1;
+  width:100%;
+  border:0;
+  background:#fff
+}
+
+/* ================= MOBILE NAVBAR ================= */
+
+@media(max-width:900px){
+
+  .app{
+    grid-template-columns:1fr;
+  }
+
+  .sidebar{
+    position:fixed;
+    bottom:0;
+    left:0;
+    right:0;
+    height:72px;
+    flex-direction:row;
+    justify-content:space-around;
+    align-items:center;
+    padding:0 6px;
+    background:#0f172a;
+    border-top:1px solid #1e293b;
+  }
+
+  .main{
+    padding-bottom:90px;
+  }
+
+  .icon{
+    width:auto;
+    min-height:auto;
+    background:transparent;
+    padding:4px 2px;
+    gap:4px;
+  }
+
+  .icon small{
+    font-size:10px;
+    font-weight:600;
+    opacity:.7;
+  }
+
+  .icon.active small{
+    opacity:1;
+    color:#22c55e;
+  }
+
+  .icon .glyph{
+    width:22px;
+    height:22px;
+  }
+
+  /* ESCONDE EXTRAS */
+  .extra{
+    display:none !important;
+  }
+
+  /* MOSTRA BOTÃO + */
+  .more-btn{
+    display:flex !important;
+  }
+
+}
+
+
+
+/* ================= GLYPHS (ÍCONES) ================= */
+
+.glyph{
+  width:22px;
+  height:22px;
+  position:relative;
+}
+
+.glyph.home::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:#00a6a0;
+  clip-path:polygon(50% 0,100% 40%,100% 100%,0 100%,0 40%);
+  border-radius:4px;
+}
+
+.glyph.doc::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:#00a6a0;
+  border-radius:4px;
+}
+
+.glyph.doc::after{
+  content:"";
+  position:absolute;
+  top:4px;
+  left:4px;
+  right:4px;
+  height:3px;
+  background:#e6f7f7;
+  box-shadow:
+    0 6px 0 #e6f7f7,
+    0 12px 0 #e6f7f7;
+}
+
+.glyph.chart::before{
+  content:"";
+  position:absolute;
+  bottom:0;
+  left:0;
+  width:5px;
+  height:14px;
+  background:#00a6a0;
+  box-shadow:
+    8px -6px 0 #00a6a0,
+    16px -2px 0 #00a6a0;
+}
+
+.glyph.settings{
+  border:3px solid #00a6a0;
+  border-radius:50%;
+}
+
+.glyph.settings::after{
+  content:"";
+  position:absolute;
+  inset:6px;
+  border:2px solid #00a6a0;
+  border-radius:50%;
+}
+
+.glyph.box::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border:3px solid #00a6a0;
+  border-radius:4px;
+}
+
+.glyph.box::after{
+  content:"";
+  position:absolute;
+  inset:6px;
+  border-top:3px solid #00a6a0;
+}
+
+.glyph.media{
+  position:relative;
+}
+
+.glyph.media::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:6px;
+  border:3px solid #00a6a0;
+}
+
+.glyph.media::after{
+  content:"";
+  position:absolute;
+  left:6px;
+  right:6px;
+  bottom:6px;
+  height:3px;
+  background:#00a6a0;
+  box-shadow:
+    0 -6px 0 #00a6a0,
+    0 -12px 0 #00a6a0;
+}
+/* ================= PLUS GLYPH ================= */
+
+.glyph.plus{
+  position:relative;
+}
+
+.glyph.plus::before,
+.glyph.plus::after{
+  content:"";
+  position:absolute;
+  background:#22c55e;
+  border-radius:2px;
+}
+
+.glyph.plus::before{
+  width:18px;
+  height:3px;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+}
+
+.glyph.plus::after{
+  width:3px;
+  height:18px;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+}
+
+/* ANIMAÇÃO DO BOTÃO + */
+
+.more-btn .glyph{
+  transition: transform .3s ease;
+}
+
+.more-btn.active .glyph{
+  transform: rotate(45deg);
+}
+/* ================= MENU MAIS ================= */
+
+.more-menu{
+  position:fixed;
+  bottom:80px;
+  left:50%;
+  transform:translate(-50%,30px);
+  width:90%;
+  max-width:360px;
+  background:rgba(17,24,39,.95);
+  backdrop-filter:blur(20px);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:22px;
+  padding:10px 0;
+  display:flex;
+  flex-direction:column;
+  box-shadow:0 30px 80px rgba(0,0,0,.6);
+  z-index:3000;
+  opacity:0;
+  pointer-events:none;
+  transition:.3s cubic-bezier(.4,0,.2,1);
+}
+
+.more-menu div{
+  padding:14px 18px;
+  font-size:14px;
+  font-weight:600;
+  text-align:center;
+  cursor:pointer;
+  color:#e5e7eb;
+  transition:.2s;
+}
+
+.more-menu div:hover{
+  background:#1f2937;
+}
+
+.more-menu.open{
+  opacity:1;
+  transform:translate(-50%,0);
+  pointer-events:auto;
+}
+
+@keyframes fadeUp{
+  from{
+    opacity:0;
+    transform:translate(-50%,20px);
+  }
+  to{
+    opacity:1;
+    transform:translate(-50%,0);
+  }
+}
+/* ESCONDE BOTÃO MAIS NO DESKTOP */
+.more-btn{
+  display:none;
+}  
+/* OVERLAY BLUR */
+
+.more-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(2,6,23,.55);
+  backdrop-filter:blur(10px);
+  opacity:0;
+  pointer-events:none;
+  transition:.25s ease;
+  z-index:2500;
+}
+
+.more-overlay.open{
+  opacity:1;
+  pointer-events:auto;
+}
+  
+</style>
+</head>
+
+<body>
+
+<section id="loginHero" class="login-hero hero-image">
+  <div class="hero-overlay">
+    <div class="hero-top">
+      <div class="hero-title">
+        <h1>CB SYSTEMS®</h1>
+        <p>Sistema de Ficha Técnica & CMV</p>
+      </div>
+      <div class="hero-actions">
+        <a class="btn primary" href="https://wa.me/5577998253249" target="_blank">Solicitar orçamento</a>
+        <button class="btn" onclick="openLogin()">Entrar</button>
+      </div>
+    </div>
+
+    <div class="hero-frame">
+      <iframe
+        src="./fundo.html"
+        style="width:100%; height:100%; border:0; border-radius:22px; background:#020617"
+        loading="lazy"
+      ></iframe>
+    </div>
+
+  </div>
+</section>
+
+<!-- MODAL LOGIN -->
+<div id="modalLogin" class="modal">
+  <div class="modal-box">
+    <span class="close" onclick="closeLogin()">✕</span>
+    <h2>Entrar no sistema</h2>
+    <p>Use seu e-mail e senha para acessar.</p>
+    <div class="field">
+      <label>Email</label>
+      <input id="email" type="email" placeholder="seu@email.com">
+    </div>
+    <div class="field" style="margin-top:10px">
+      <label>Senha</label>
+      <input id="senha" type="password" placeholder="••••••••">
+    </div>
+    <div class="actions">
+      <button class="btn primary" onclick="login()">Entrar</button>
+      <button class="btn" onclick="closeLogin()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="app">
+
+  
+<aside class="sidebar">
+
+<div class="icon active" onclick="openPage('home.html',this)">
+  <span class="glyph home"></span>
+  <small>Home</small>
+</div>
+
+<div class="icon" onclick="openPage('fichatecnica.html',this)">
+  <span class="glyph doc"></span>
+  <small>Fichas</small>
+</div>
+
+<div class="icon" onclick="openPage('ingredientes.html',this)">
+  <span class="glyph box"></span>
+  <small>Itens</small>
+</div>
+
+<div class="icon" onclick="openPage('analiseficha.html',this)">
+  <span class="glyph chart"></span>
+  <small>Análise</small>
+</div>
+
+<div class="icon" onclick="openPage('config.html',this)">
+  <span class="glyph settings"></span>
+  <small>Financeiro</small>
+</div>
+
+<div class="icon extra" onclick="openPage('ingredientesexcel.html',this)">
+  <span class="glyph box"></span>
+  <small>Excel</small>
+</div>
+
+<div class="icon extra" onclick="openPage('midias.html',this)">
+  <span class="glyph media"></span>
+  <small>Mídias</small>
+</div>
+
+<div class="icon extra" onclick="openPage('relatorios.html',this)">
+  <span class="glyph doc"></span>
+  <small>Relatórios</small>
+</div>
+
+<!-- BOTÃO MAIS (SÓ MOBILE) -->
+<div class="icon more-btn" onclick="toggleMoreMenu()">
+  <span class="glyph plus"></span>
+  <small>Mais</small>
+</div>
+
+</aside>
+<div id="moreOverlay" class="more-overlay" onclick="toggleMoreMenu()"></div>
+
+<div id="moreMenu" class="more-menu">
+  <div onclick="selectFromMore('config.html')">Financeiro</div>
+  <div onclick="selectFromMore('ingredientesexcel.html')">Excel</div>
+  <div onclick="selectFromMore('midias.html')">Mídias</div>
+  <div onclick="selectFromMore('relatorios.html')">Relatórios</div>
+</div>
+  <div class="main">
+    <div class="header">
+      <span id="pageTitle">CB SYSTEMS® - Dashboard</span>
+      <button class="logout" onclick="logout()">Sair</button>
+    </div>
+    <iframe id="frame" src=""></iframe>
+  </div>
+</div>
+
+<script>
+const sb = supabase.createClient(
+  "https://dxkszikemntfusfyrzos.supabase.co",
+  "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
+);
+
+
+
+function openLogin(){ document.getElementById("modalLogin").classList.add("open"); }
+function closeLogin(){ document.getElementById("modalLogin").classList.remove("open"); }
+
+async function login(){
+  const { error } = await sb.auth.signInWithPassword({ email: email.value, password: senha.value });
+  if(error){ alert(error.message); return; }
+  await sb.auth.getSession();
+  closeLogin();
+  showApp();
+  openPage("home.html", document.querySelector(".icon"));
+}
+
+async function logout(){
+  await sb.auth.signOut();
+  location.reload();
+}
+
+function showApp(){
+  document.getElementById("loginHero").style.display = "none";
+  document.getElementById("app").style.display = "grid";
+}
+
+function openPage(page, el){
+
+  localStorage.setItem("cb_page", page);
+  document.getElementById("frame").src = page;
+
+  // limpa estado ativo
+  document.querySelectorAll(".icon").forEach(i=>i.classList.remove("active"));
+
+  if(el) el.classList.add("active");
+
+  // 🔥 RESTAURA NAVBAR SE ESTIVER EM MODO SELECIONADO
+  document.querySelectorAll(".mobile-selected").forEach(e=>e.remove());
+
+document.querySelectorAll(".sidebar .icon").forEach(i=>{
+  if(
+    !i.classList.contains("more-btn") &&
+    !i.classList.contains("extra")
+  ){
+    i.style.display = "";
+  }
+});
+
+document.getElementById("moreMenu").classList.remove("open");
+document.getElementById("moreOverlay").classList.remove("open");
+document.querySelector(".more-btn").classList.remove("active");
+  const titles = {
+    "home.html": "CB SYSTEMS® - Dashboard",
+    "fichatecnica.html": "CB SYSTEMS® - Fichas Técnicas",
+    "ingredientes.html": "CB SYSTEMS® - Ingredientes",
+    "analiseficha.html": "CB SYSTEMS® - Análise de Fichas",
+    "config.html": "CB SYSTEMS® - Análise financeira",
+    "ingredientesexcel.html": "CB SYSTEMS® - Excel de Ingredientes",
+    "midias.html": "CB SYSTEMS® - Mídias do Cardápio",
+    "relatorios.html": "CB SYSTEMS® - Relatórios"
+  };
+
+  document.getElementById("pageTitle").innerText = titles[page] || "CB SYSTEMS®";
+}
+async function check(){
+  const { data } = await sb.auth.getSession();
+  if(data.session){
+    showApp();
+    const page = localStorage.getItem("cb_page") || "home.html";
+    const icon = [...document.querySelectorAll(".icon")]
+      .find(i => i.getAttribute("onclick")?.includes(page)) || document.querySelector(".icon");
+    openPage(page, icon);
+  }
+}
+
+check();
+window.openLogin = openLogin;
+window.closeLogin = closeLogin;
+
+
+function toggleMoreMenu(){
+
+  const menu = document.getElementById("moreMenu");
+  const overlay = document.getElementById("moreOverlay");
+  const btn = document.querySelector(".more-btn");
+
+  const isOpen = menu.classList.contains("open");
+
+  if(isOpen){
+    menu.classList.remove("open");
+    overlay.classList.remove("open");
+    btn.classList.remove("active");
+  }else{
+    menu.classList.add("open");
+    overlay.classList.add("open");
+    btn.classList.add("active");
+  }
+}
+function selectFromMore(page){
+
+  openPage(page, document.querySelector(`.icon[onclick*="${page}"]`));
+
+  document.getElementById("moreMenu").classList.remove("open");
+  document.getElementById("moreOverlay").classList.remove("open");
+  document.querySelector(".more-btn").classList.remove("active");
+
+}
+
+  
+</script>
+
+</body>
+</html>

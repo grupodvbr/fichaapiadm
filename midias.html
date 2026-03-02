@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Mídias de Promoção • Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+:root{
+  --bg:#0b0b0c; --card:#0f0f12; --text:#fff; --muted:#9ca3af;
+  --gold:#d4af37; --border:#1f1f22; --danger:#dc2626;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:linear-gradient(180deg,#000,#0b0b0c);color:#fff;font-family:Inter;overflow-y:auto}
+body.modal-open{overflow:hidden} /* 🔒 trava scroll do fundo */
+
+.header{position:sticky;top:0;padding:14px 18px;background:#000;border-bottom:1px solid var(--border);z-index:10;display:flex;justify-content:space-between;align-items:center}
+.header h1{margin:0;font-size:18px;font-weight:900}
+
+.container{max-width:1200px;margin:0 auto;padding:16px;display:grid;grid-template-columns:360px 1fr;gap:16px}
+@media(max-width:900px){.container{grid-template-columns:1fr}}
+
+.panel{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:14px;display:grid;gap:12px}
+.panel h2{margin:0 0 4px;font-size:13px;color:var(--gold);letter-spacing:.6px}
+
+label{font-size:12px;color:var(--muted)}
+input,select,button{height:44px;border-radius:12px;border:1px solid var(--border);background:#0b0b0c;color:#fff;padding:0 12px}
+button.primary{border-color:var(--gold);color:var(--gold);font-weight:900;cursor:pointer}
+button.primary:hover{box-shadow:0 0 0 2px rgba(212,175,55,.15) inset}
+
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.days{display:flex;gap:8px;flex-wrap:wrap}
+.day{padding:8px 12px;border:1px solid var(--border);border-radius:999px;font-size:12px;cursor:pointer;color:#fff;user-select:none}
+.day.active{border-color:var(--gold);color:var(--gold);background:rgba(212,175,55,.08)}
+
+.preview{width:100%;height:200px;border-radius:14px;border:1px dashed var(--border);display:grid;place-items:center;overflow:hidden;background:#000}
+.preview img,.preview video{width:100%;height:100%;object-fit:contain}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.card{background:#0f0f12;border:1px solid var(--border);border-radius:16px;overflow:hidden;display:grid;grid-template-rows:auto 1fr auto}
+.media{width:100%;height:220px;background:#000;display:grid;place-items:center}
+.media img,.media video{max-width:100%;max-height:100%;object-fit:contain}
+.meta{padding:10px;display:grid;gap:6px}
+.badge{display:inline-block;font-size:10px;font-weight:900;border:1px solid var(--border);padding:4px 8px;border-radius:999px}
+.badge.on{border-color:var(--gold);color:var(--gold)}
+.badge.off{border-color:#444;color:#aaa}
+.info{font-size:12px;color:#cbd5f5}
+.actions{display:flex;gap:8px;padding:10px}
+.actions button{flex:1}
+.actions .danger{border-color:var(--danger);color:var(--danger)}
+.actions .toggle.on{border-color:var(--gold);color:var(--gold)}
+.actions .toggle.off{border-color:#555;color:#aaa}
+
+/* ===== MODAL ===== */
+.modal{position:fixed; inset:0;background:rgba(0,0,0,.7);backdrop-filter: blur(6px);display:none;place-items:center;z-index:9999}
+.modal.open{display:grid}
+.modal-box{
+  width:100%;max-width:980px;height:90vh;
+  background:linear-gradient(180deg,#0a0a0a,#000);
+  border-radius:22px;border:1px solid var(--border);
+  padding:16px;display:grid;grid-template-columns:1fr 380px;gap:14px;
+  overflow:hidden; /* 🔒 evita scroll no container do modal */
+}
+.buffet-wrap{display:grid;grid-template-rows:auto 1fr;gap:8px;height:100%}
+.buffet-list{overflow:auto;border:1px solid var(--border);border-radius:14px}
+.buffet-item{display:grid;grid-template-columns:64px 1fr auto;gap:10px;padding:10px;border-bottom:1px solid var(--border);cursor:pointer}
+.buffet-item:hover{background:#0f0f12}
+.buffet-item img{width:64px;height:64px;object-fit:contain;background:#000;border-radius:10px}
+
+.toggle{padding:8px 12px;border-radius:999px;border:1px solid var(--border)}
+.toggle.on{border-color:var(--gold);color:var(--gold)}
+.toggle.off{opacity:.6}
+
+.edit{border:1px solid var(--border);border-radius:14px;padding:12px;display:grid;gap:8px;overflow:auto} /* 🔒 rola só aqui */
+.filters{display:grid;grid-template-columns:1fr 160px;gap:8px}
+textarea{min-height:80px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Mídias do cardápio</h1>
+  <button class="primary" onclick="openBuffetModal()">🍽️ Itens do Cardápio</button>
+</div>
+
+<div class="container">
+  <div class="panel">
+    <h2>NOVA PROMOÇÃO</h2>
+    <label>Arquivo (imagem ou vídeo)</label>
+    <input id="file" type="file" accept="image/*,video/*">
+    <div class="row">
+      <div>
+        <label>Tipo</label>
+        <select id="tipo"><option value="IMG">Imagem</option><option value="VIDEO">Vídeo</option></select>
+      </div>
+      <div>
+        <label>Horário</label>
+        <div class="row">
+          <input id="hora_inicio" type="time" value="00:00">
+          <input id="hora_fim" type="time" value="23:59">
+        </div>
+      </div>
+    </div>
+    <label>Dias da semana</label>
+    <div class="days" id="dias">
+      <div class="day" data-v="1">Seg</div><div class="day" data-v="2">Ter</div><div class="day" data-v="3">Qua</div>
+      <div class="day" data-v="4">Qui</div><div class="day" data-v="5">Sex</div><div class="day" data-v="6">Sáb</div><div class="day" data-v="7">Dom</div>
+    </div>
+    <div class="preview" id="preview">Pré-visualização</div>
+    <button class="primary" onclick="addPromo()">📤 Upload & Salvar</button>
+  </div>
+  <div><div class="grid" id="grid"></div></div>
+</div>
+
+<script>
+const sb = supabase.createClient("https://dxkszikemntfusfyrzos.supabase.co","sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed");
+const fileInput=document.getElementById("file"), tipoInput=document.getElementById("tipo"), horaInicioInput=document.getElementById("hora_inicio"), horaFimInput=document.getElementById("hora_fim"), preview=document.getElementById("preview"), grid=document.getElementById("grid");
+let diasSel=[];
+document.querySelectorAll(".day").forEach(d=>d.onclick=()=>{d.classList.toggle("active");const v=+d.dataset.v;diasSel.includes(v)?diasSel=diasSel.filter(x=>x!==v):diasSel.push(v);});
+fileInput.onchange=()=>{const f=fileInput.files[0];if(!f)return;preview.innerHTML=f.type.startsWith("video")?`<video src="${URL.createObjectURL(f)}" autoplay muted loop playsinline></video>`:`<img src="${URL.createObjectURL(f)}">`;};
+const diasLabel=d=>({1:"Seg",2:"Ter",3:"Qua",4:"Qui",5:"Sex",6:"Sáb",7:"Dom"}[d]||d);
+async function load(){const{data}=await sb.from("promocoes").select("*").order("created_at",{ascending:false});grid.innerHTML=(data||[]).map(p=>`<div class="card"><div class="media">${p.tipo==="VIDEO"?`<video src="${p.url}" muted autoplay loop playsinline></video>`:`<img src="${p.url}">`}</div><div class="meta"><span class="badge ${p.ativo?'on':'off'}">${p.tipo} • ${p.ativo?'ON':'OFF'}</span><div class="info">📅 ${(p.dias_semana||[]).map(diasLabel).join(", ")||"—"}<br/>⏰ ${p.hora_inicio} → ${p.hora_fim}</div></div><div class="actions"><button class="toggle ${p.ativo?'on':'off'}" onclick="toggle('${p.id}',${p.ativo})">${p.ativo?'Desativar':'Ativar'}</button><button class="danger" onclick="delPromo('${p.id}','${p.url}')">Excluir</button></div></div>`).join("");}
+async function addPromo(){const f=fileInput.files[0];if(!f||!diasSel.length)return alert("Arquivo e dias obrigatórios");const ext=f.name.split(".").pop();const path=`promocoes/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;await sb.storage.from("promocoes").upload(path,f,{upsert:false});const{data:urlData}=sb.storage.from("promocoes").getPublicUrl(path);await sb.from("promocoes").insert({url:urlData.publicUrl,tipo:tipoInput.value,dias_semana:diasSel,hora_inicio:horaInicioInput.value,hora_fim:horaFimInput.value,ativo:true});fileInput.value="";preview.innerHTML="Pré-visualização";diasSel=[];document.querySelectorAll(".day").forEach(d=>d.classList.remove("active"));load();}
+async function toggle(id,ativo){await sb.from("promocoes").update({ativo:!ativo}).eq("id",id);load();}
+async function delPromo(id,url){if(!confirm("Excluir mídia?"))return;const path=url.split("/storage/v1/object/public/promocoes/")[1];if(path)await sb.storage.from("promocoes").remove([path]);await sb.from("promocoes").delete().eq("id",id);load();}
+load();
+
+let buffetItems=[],currentEdit=null;
+function openBuffetModal(){document.body.classList.add("modal-open");document.getElementById("buffetModal").classList.add("open");loadBuffet();}
+function closeBuffetModal(){document.body.classList.remove("modal-open");document.getElementById("buffetModal").classList.remove("open");}
+async function loadBuffet(){const{data}=await sb.from("buffet").select("id,nome,descricao,foto_url,ativo,cardapio,tipo").eq("ativo",true).order("nome");buffetItems=data||[];renderBuffet();}
+function renderBuffet(){const term=buscaBuffet.value.toLowerCase();const setor=filtroSetor.value;buffetList.innerHTML=buffetItems.filter(i=>(i.nome||"").toLowerCase().includes(term)&&(!setor||i.tipo===setor)).map(i=>`<div class="buffet-item" onclick="selectItem('${i.id}')"><img src="${i.foto_url||''}"><div><b>${i.nome}</b><br><small>${i.descricao||''}</small><br><small style="opacity:.6">${i.tipo||'Sem setor'}</small></div><button class="toggle ${i.cardapio?'on':'off'}" onclick="toggleCardapio(event,'${i.id}',${i.cardapio})">${i.cardapio?'NO CARDÁPIO':'FORA'}</button></div>`).join("");}
+function selectItem(id){currentEdit=buffetItems.find(i=>i.id===id);editNome.value=currentEdit.nome||"";editDesc.value=currentEdit.descricao||"";}
+async function toggleCardapio(ev,id,atual){ev.stopPropagation();await sb.from("buffet").update({cardapio:!atual}).eq("id",id);loadBuffet();}
+async function salvarItem(){if(!currentEdit)return alert("Selecione um item");let foto_url=currentEdit.foto_url;const f=editFoto.files[0];if(f){const ext=f.name.split(".").pop();const path=`buffet/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;await sb.storage.from("buffet").upload(path,f,{upsert:false});foto_url=sb.storage.from("buffet").getPublicUrl(path).data.publicUrl;}await sb.from("buffet").update({nome:editNome.value,descricao:editDesc.value,foto_url}).eq("id",currentEdit.id);editFoto.value="";currentEdit=null;loadBuffet();}
+</script>
+
+<div id="buffetModal" class="modal" onclick="if(event.target.id==='buffetModal')closeBuffetModal()">
+  <div class="modal-box">
+    <div class="buffet-wrap">
+      <div class="filters">
+        <input id="buscaBuffet" placeholder="Buscar item..." oninput="renderBuffet()">
+        <select id="filtroSetor" onchange="renderBuffet()">
+          <option value="">Todos</option>
+          <option value="SUSHI">Sushi</option>
+          <option value="PIZZA">Pizza</option>
+          <option value="MASSAS">Massas</option>
+          <option value="BEBIDAS">Bebidas</option>
+        </select>
+      </div>
+      <div id="buffetList" class="buffet-list"></div>
+    </div>
+    <div class="edit">
+      <h3>Editar Item</h3>
+      <input id="editNome" placeholder="Nome">
+      <textarea id="editDesc" placeholder="Descrição"></textarea>
+      <input id="editFoto" type="file" accept="image/*">
+      <button class="primary" onclick="salvarItem()">Salvar alterações</button>
+      <button onclick="closeBuffetModal()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

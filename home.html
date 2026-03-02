@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>CMV • Executive Intelligence</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+:root{
+  --bg:#070c16;
+  --card:#0f172a;
+  --border:#1e293b;
+  --text:#e2e8f0;
+  --muted:#64748b;
+  --green:#22c55e;
+  --yellow:#f59e0b;
+  --red:#ef4444;
+  --blue:#3b82f6;
+  --radius:16px;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Inter,sans-serif;
+  background:radial-gradient(circle at 20% -10%, #0f172a 0%, #070c16 60%);
+  color:var(--text);
+}
+
+/* HEADER */
+.header{
+  padding:18px 24px;
+  border-bottom:1px solid var(--border);
+  background:#0b1220cc;
+  position:sticky;
+  top:0;
+  z-index:20;
+  backdrop-filter:blur(10px);
+}
+.header h1{margin:0;font-size:18px;font-weight:900}
+.header small{color:var(--muted);font-size:12px}
+
+/* CONTAINER */
+.container{padding:22px;max-width:1600px;margin:auto}
+
+/* FILTERS */
+.filters{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:10px;
+  margin-bottom:22px;
+}
+.filters input,.filters select{
+  background:var(--card);
+  border:1px solid var(--border);
+  color:#fff;
+  border-radius:8px;
+  padding:8px 10px;
+  font-size:12px;
+  font-weight:700;
+}
+
+/* KPIS */
+.kpis{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:14px;
+  margin-bottom:24px;
+}
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:14px;
+}
+.card small{font-size:10px;color:var(--muted);font-weight:800;text-transform:uppercase}
+.card b{display:block;margin-top:6px;font-size:22px;font-weight:900}
+.blue b{color:var(--blue)}
+.green b{color:var(--green)}
+.yellow b{color:var(--yellow)}
+.red b{color:var(--red)}
+
+.section{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:20px;
+}
+@media(max-width:1100px){.section{grid-template-columns:1fr}}
+
+.panel{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:18px;
+  max-height:380px;
+  overflow:auto;
+}
+.panel h3{margin:0 0 12px;font-size:14px;font-weight:900}
+
+.item{
+  display:flex;
+  justify-content:space-between;
+  padding:8px;
+  border-radius:8px;
+  cursor:pointer;
+  transition:.2s;
+}
+.item:hover{background:#111827}
+
+.score{font-weight:900}
+.score.green{color:var(--green)}
+.score.yellow{color:var(--yellow)}
+.score.red{color:var(--red)}
+
+.tipo-health{
+  padding:8px;
+  border-radius:10px;
+  margin-bottom:8px;
+  display:flex;
+  justify-content:space-between;
+}
+.tipo-health.green{background:#052e1a}
+.tipo-health.yellow{background:#2e2105}
+.tipo-health.red{background:#2e0508}
+
+/* MODAL */
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.7);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:50;
+}
+.modal-box{
+  background:var(--card);
+  border-radius:20px;
+  width:95%;
+  max-width:900px;
+  max-height:90vh;
+  overflow:auto;
+  padding:22px;
+  border:1px solid var(--border);
+  position:relative;
+}
+.close{
+  position:absolute;
+  top:14px;
+  right:18px;
+  font-size:22px;
+  cursor:pointer;
+}
+.modal-header{
+  display:flex;
+  gap:20px;
+  flex-wrap:wrap;
+}
+.modal-img{
+  width:240px;
+  border-radius:14px;
+  object-fit:cover;
+}
+.badge{
+  display:inline-block;
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:800;
+  margin:4px 4px 0 0;
+}
+.badge.red{background:#2a0f15;color:var(--red)}
+.badge.yellow{background:#2a1c0f;color:var(--yellow)}
+.badge.green{background:#0f2a1b;color:var(--green)}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <h1>CMV • Executive Intelligence</h1>
+  <small id="atualizado"></small>
+</div>
+
+<div class="container">
+
+<div class="filters">
+  <input id="fNome" placeholder="Buscar prato">
+  <select id="fTipo"><option value="">Todos tipos</option></select>
+  <select id="fStatus">
+    <option value="">Todos</option>
+    <option value="true">Ativos</option>
+    <option value="false">Inativos</option>
+  </select>
+  <select id="fRisco">
+    <option value="">Todos riscos</option>
+    <option value="alto">Alto / Crítico</option>
+    <option value="medio">Médio</option>
+    <option value="baixo">Baixo</option>
+  </select>
+  <input id="fDias" type="number" placeholder="Dias sem alterar custo">
+</div>
+
+<div class="kpis">
+  <div class="card blue"><small>Total</small><b id="kTotal">—</b></div>
+  <div class="card green"><small>Ativos</small><b id="kAtivos">—</b></div>
+  <div class="card yellow"><small>CMV Médio</small><b id="kCmv">—%</b></div>
+  <div class="card green"><small>Lucro Total</small><b id="kLucro">—</b></div>
+  <div class="card red"><small>CMV > 40%</small><b id="kCmv40">—</b></div>
+  <div class="card red"><small>CMV > 45%</small><b id="kCmv45">—</b></div>
+  <div class="card yellow"><small>Sem Preço</small><b id="kSemPreco">—</b></div>
+  <div class="card yellow"><small>Sem Custo</small><b id="kSemCusto">—</b></div>
+  <div class="card yellow"><small>Sem Foto</small><b id="kSemFoto">—</b></div>
+</div>
+
+<div class="section">
+  <div class="panel">
+    <h3>🚨 Ranking por Score</h3>
+    <div id="listaRisco"></div>
+  </div>
+
+  <div class="panel">
+    <h3>🏥 Saúde por Tipo</h3>
+    <div id="saudeTipo"></div>
+  </div>
+</div>
+
+<div class="panel" style="margin-top:20px">
+  <h3>📊 CMV Médio por Tipo</h3>
+  <canvas id="graficoTipo"></canvas>
+</div>
+
+</div>
+
+<div id="modal" class="modal" onclick="fecharModal()">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <span class="close" onclick="fecharModal()">✕</span>
+    <div id="modalDetalhe"></div>
+  </div>
+</div>
+
+<script>
+const sb = supabase.createClient(
+  "https://dxkszikemntfusfyrzos.supabase.co",
+  "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
+);
+
+const moeda=v=>"R$ "+Number(v||0).toLocaleString("pt-BR",{minimumFractionDigits:2});
+let dados=[];
+
+async function carregarTipos(){
+  const {data}=await sb.from("buffet").select("tipo");
+  const tipos=[...new Set((data||[]).map(i=>i.tipo).filter(Boolean))];
+  fTipo.innerHTML+=tipos.map(t=>`<option>${t}</option>`).join("");
+}
+
+async function carregarDados(){
+  atualizado.textContent="Atualizado em "+new Date().toLocaleString("pt-BR");
+
+  const {data:buffet}=await sb.from("buffet").select("*");
+  const {data:itens}=await sb.from("buffet_itens").select("*");
+  const {data:hist}=await sb.from("historico_alteracao_fichas").select("*");
+
+  const custoMap={};
+  itens.forEach(i=>{
+    custoMap[i.buffet_id]=(custoMap[i.buffet_id]||0)+Number(i.custo_calculado||0);
+  });
+
+  dados=buffet.map(b=>{
+    const custo=custoMap[b.id]||0;
+    const preco=Number(b.preco_venda||0);
+    const cmv=preco>0?(custo/preco)*100:0;
+    const lucro=preco-custo;
+
+    const ult=hist?.filter(h=>h.buffet_id===b.id)
+      .sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))[0];
+
+    const dias=ult?Math.floor((Date.now()-new Date(ult.created_at))/86400000):null;
+
+    let score=100;
+    if(!b.foto_url) score-=20;
+    if(preco<=0) score-=30;
+    if(custo<=0) score-=30;
+    if(cmv>35) score-=20;
+    if(dias && dias>30) score-=10;
+
+    return {...b,custo,preco,cmv,lucro,dias,score};
+  });
+
+  aplicarFiltros();
+}
+
+function aplicarFiltros(){
+  let lista=[...dados];
+
+  if(fNome.value) lista=lista.filter(i=>i.nome.toLowerCase().includes(fNome.value.toLowerCase()));
+  if(fTipo.value) lista=lista.filter(i=>i.tipo===fTipo.value);
+  if(fStatus.value) lista=lista.filter(i=>String(i.ativo)===fStatus.value);
+  if(fDias.value) lista=lista.filter(i=>i.dias>=Number(fDias.value));
+
+  if(fRisco.value==="alto") lista=lista.filter(i=>i.score<60);
+  if(fRisco.value==="medio") lista=lista.filter(i=>i.score>=60&&i.score<80);
+  if(fRisco.value==="baixo") lista=lista.filter(i=>i.score>=80);
+
+  atualizar(lista);
+}
+
+function atualizar(lista){
+  kTotal.textContent=lista.length;
+  kAtivos.textContent=lista.filter(i=>i.ativo).length;
+  kCmv.textContent=(lista.reduce((s,i)=>s+i.cmv,0)/lista.length||0).toFixed(1);
+  kLucro.textContent=moeda(lista.reduce((s,i)=>s+i.lucro,0));
+  kCmv40.textContent=lista.filter(i=>i.cmv>40).length;
+  kCmv45.textContent=lista.filter(i=>i.cmv>45).length;
+  kSemPreco.textContent=lista.filter(i=>i.preco<=0).length;
+  kSemCusto.textContent=lista.filter(i=>i.custo<=0).length;
+  kSemFoto.textContent=lista.filter(i=>!i.foto_url).length;
+
+  listaRisco.innerHTML=lista
+    .sort((a,b)=>a.score-b.score)
+    .slice(0,10)
+    .map(i=>`
+      <div class="item" onclick="abrirDetalhe('${i.id}')">
+        <span>${i.nome}</span>
+        <span class="score ${i.score<60?'red':i.score<80?'yellow':'green'}">${i.score}</span>
+      </div>
+    `).join("");
+
+  const tipoStats={};
+  lista.forEach(i=>{
+    if(!tipoStats[i.tipo]) tipoStats[i.tipo]={total:0,cmv:0,critico:0,incompleto:0};
+    tipoStats[i.tipo].total++;
+    tipoStats[i.tipo].cmv+=i.cmv;
+    if(i.cmv>40) tipoStats[i.tipo].critico++;
+    if(i.preco<=0||i.custo<=0||!i.foto_url)
+      tipoStats[i.tipo].incompleto++;
+  });
+
+  saudeTipo.innerHTML="";
+  const labels=[], valores=[];
+
+  Object.entries(tipoStats).forEach(([tipo,stat])=>{
+    const cmvMedio=stat.cmv/stat.total;
+    const criticoPerc=(stat.critico/stat.total)*100;
+    const incompletoPerc=(stat.incompleto/stat.total)*100;
+
+    let score=100;
+    if(cmvMedio>35) score-=20;
+    if(criticoPerc>20) score-=30;
+    if(incompletoPerc>20) score-=20;
+
+    let classe="green";
+    if(score<60) classe="red";
+    else if(score<80) classe="yellow";
+
+    saudeTipo.innerHTML+=`
+      <div class="tipo-health ${classe}">
+        <span>${tipo}</span>
+        <span>CMV ${cmvMedio.toFixed(1)}%</span>
+        <span>${score}</span>
+      </div>
+    `;
+
+    labels.push(tipo);
+    valores.push(cmvMedio.toFixed(1));
+  });
+
+  new Chart(graficoTipo,{
+    type:"bar",
+    data:{labels:labels,datasets:[{data:valores}]},
+    options:{plugins:{legend:{display:false}}}
+  });
+}
+
+function abrirDetalhe(id){
+  const item=dados.find(i=>i.id===id);
+  if(!item) return;
+
+  document.body.style.overflow="hidden";
+  modal.style.display="flex";
+
+  modalDetalhe.innerHTML=`
+    <div class="modal-header">
+      <img src="${item.foto_url||'https://placehold.co/400x300?text=Sem+Foto'}" class="modal-img">
+      <div>
+        <h2>${item.nome}</h2>
+        <p><b>Tipo:</b> ${item.tipo||'-'}</p>
+        <p><b>Preço:</b> ${moeda(item.preco)}</p>
+        <p><b>Custo:</b> ${moeda(item.custo)}</p>
+        <p><b>CMV:</b> ${item.cmv.toFixed(1)}%</p>
+        <p><b>Lucro:</b> ${moeda(item.lucro)}</p>
+        <p><b>Dias sem atualização:</b> ${item.dias||0}</p>
+        <p><b>Score:</b> ${item.score}</p>
+        <div>
+          ${!item.foto_url?'<span class="badge red">Sem foto</span>':''}
+          ${item.preco<=0?'<span class="badge red">Sem preço</span>':''}
+          ${item.custo<=0?'<span class="badge red">Sem custo</span>':''}
+          ${item.cmv>35?'<span class="badge yellow">CMV Alto</span>':''}
+          ${item.score>=80?'<span class="badge green">Saudável</span>':''}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function fecharModal(){
+  modal.style.display="none";
+  document.body.style.overflow="auto";
+}
+
+document.querySelectorAll("input,select").forEach(e=>{
+  e.addEventListener("input",aplicarFiltros);
+  e.addEventListener("change",aplicarFiltros);
+});
+
+(async()=>{
+  await carregarTipos();
+  await carregarDados();
+})();
+</script>
+
+</body>
+</html>
