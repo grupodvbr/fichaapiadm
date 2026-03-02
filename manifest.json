@@ -1,6 +1,6 @@
 {
-  "name": "Cardápio Premium",
-  "short_name": "Cardápio",
+  "name": "Fichas Técnicas",
+  "short_name": "Ficha Técnica",
   "start_url": "./",
   "display": "fullscreen",
   "background_color": "#000000",
