@@ -1,4 +1,4 @@
-const CACHE_NAME = "cardapio-v1";
+const CACHE_NAME = "Adm Fichas";
 
 const FILES_TO_CACHE = [
   "./",
