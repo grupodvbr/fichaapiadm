@@ -898,12 +898,38 @@ async function delPromo(id){
 }
 
 async function editarPromo(id){
-  const {data}=await sb.from("promocoes").select("*").eq("id",id).single();
-  editingPromoId=id;
-  tipoInput.value=data.tipo;
-  horaInicioInput.value=data.hora_inicio;
-  horaFimInput.value=data.hora_fim;
-  diasSel=data.dias_semana||[];
+
+  const { data } = await sb
+    .from("promocoes")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  editingPromoId = id;
+
+  tipoInput.value = data.tipo;
+  horaInicioInput.value = data.hora_inicio;
+  horaFimInput.value = data.hora_fim;
+
+  diasSel = data.dias_semana || [];
+
+  /* 🔥 ATUALIZA VISUAL DOS DIAS */
+  document.querySelectorAll(".day").forEach(d=>{
+    const v = +d.dataset.v;
+    d.classList.toggle("active", diasSel.includes(v));
+  });
+
+  /* 🔥 MOSTRA IMAGEM ORIGINAL NO PREVIEW */
+  if(data.url){
+    preview.innerHTML = data.tipo === "VIDEO"
+      ? `<video src="${data.url}" autoplay muted loop></video>`
+      : `<img src="${data.url}">`;
+  }else{
+    preview.innerHTML = "Pré-visualização";
+  }
+
+  /* limpa input file (não pode preencher programaticamente) */
+  fileInput.value = "";
 }
 
 function resetForm(){
