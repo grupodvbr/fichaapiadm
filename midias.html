@@ -617,6 +617,34 @@ button.danger{
   }
 
 }
+
+.edit-btn{
+  height:26px;
+  width:26px;
+  border:none;
+  border-radius:8px;
+  background:#eef2ff;
+  color:#1e40af;
+  font-size:12px;
+  font-weight:800;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:.2s;
+}
+
+.edit-btn:hover{
+  background:#dbeafe;
+  transform:scale(1.05);
+}
+
+.small-x{
+  height:26px;
+  width:26px;
+  padding:0;
+  font-size:11px;
+}
 </style>
 </head>
 <body>
@@ -755,6 +783,11 @@ async function loadPromos(){
     </div>
 
     <div class="card-footer">
+
+      <button class="edit-btn"
+        onclick="editarPromo('${p.id}')">
+        ✏️
+      </button>
       
       <label class="switch">
         <input type="checkbox"
@@ -763,8 +796,7 @@ async function loadPromos(){
         <span class="slider"></span>
       </label>
 
-      <button class="danger"
-        style="height:26px;padding:0 10px;font-size:10px;"
+      <button class="danger small-x"
         onclick="delPromo('${p.id}')">
         X
       </button>
