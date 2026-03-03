@@ -691,8 +691,17 @@ button.danger{
     </div>
 
     <div class="preview" id="preview">Pré-visualização</div>
-    <button class="primary" onclick="addPromo()">Salvar Promoção</button>
+<div style="display:flex; gap:10px;">
+  <button id="btnSalvar" class="primary" onclick="addPromo()">
+    Salvar Promoção
+  </button>
 
+  <button id="btnCancelar" class="secondary" 
+          onclick="cancelEdit()" 
+          style="display:none;">
+    Cancelar
+  </button>
+</div>
   </div>
 
   <div class="right-area">
@@ -925,7 +934,8 @@ async function editarPromo(id){
     .single();
 
   editingPromoId = id;
-
+document.getElementById("btnCancelar").style.display = "inline-block";
+document.getElementById("btnSalvar").innerText = "Atualizar Promoção";
   tipoInput.value = data.tipo;
   horaInicioInput.value = data.hora_inicio;
   horaFimInput.value = data.hora_fim;
@@ -952,13 +962,31 @@ async function editarPromo(id){
 }
 
 function resetForm(){
-  fileInput.value="";
-  preview.innerHTML="Pré-visualização";
-  diasSel=[];
+
+  fileInput.value = "";
+  preview.innerHTML = "Pré-visualização";
+  diasSel = [];
+
+  document.querySelectorAll(".day").forEach(d=>{
+    d.classList.remove("active");
+  });
+
+  tipoInput.value = "IMG";
+  horaInicioInput.value = "00:00";
+  horaFimInput.value = "23:59";
 }
 
 loadPromos();
+  
+function cancelEdit(){
 
+  editingPromoId = null;
+
+  resetForm();
+
+  document.getElementById("btnCancelar").style.display = "none";
+  document.getElementById("btnSalvar").innerText = "Salvar Promoção";
+}
 /* ===================== BUFFET ===================== */
 
 let buffetItems=[];
