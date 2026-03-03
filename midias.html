@@ -659,6 +659,73 @@ button.danger{
 .btn-group button{
   flex:1;              /* 🔥 divide o espaço igualmente */
 }
+
+/* ================= PRODUTO VINCULADO UI FIX ================= */
+
+#buscaProduto{
+  margin-top:6px;
+}
+
+#resultadoProdutos{
+  margin-top:6px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:#fff;
+  box-shadow:0 8px 20px rgba(0,0,0,.06);
+  overflow:auto;
+  max-height:160px;
+}
+
+/* itens da busca */
+#resultadoProdutos div{
+  padding:10px 14px;
+  font-size:13px;
+  font-weight:600;
+  cursor:pointer;
+  transition:.15s;
+}
+
+#resultadoProdutos div:hover{
+  background:#f1f5f9;
+}
+
+/* card produto vinculado */
+#produtoSelecionado{
+  margin-top:10px;
+  padding:16px;
+  border:1px solid var(--border);
+  border-radius:14px;
+  background:#f9fafb;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  box-shadow:var(--shadow-sm);
+}
+
+/* título */
+#produtoSelecionado strong{
+  font-size:12px;
+  color:var(--muted);
+  letter-spacing:.5px;
+}
+
+/* nome do produto */
+#produtoSelecionado span{
+  font-size:15px;
+  font-weight:800;
+  color:var(--primary);
+}
+
+/* botão remover alinhado */
+#produtoSelecionado button{
+  align-self:flex-start;
+  height:32px;
+  padding:0 14px;
+  font-size:12px;
+  border-radius:10px;
+}
+
+
 </style>
 </head>
 <body>
@@ -699,8 +766,23 @@ button.danger{
       <div class="day" data-v="7">Dom</div>
     </div>
 
-    <div class="preview" id="preview">Pré-visualização</div>
+<div class="preview" id="preview">Pré-visualização</div>
+
+<label>Vincular Produto</label>
+<input id="buscaProduto" 
+       placeholder="Pesquisar produto..."
+       oninput="buscarProdutos()">
+
+<div id="resultadoProdutos" 
+     style="max-height:150px; overflow:auto;"></div>
+
+<div id="produtoSelecionado" 
+     style="display:none; padding:10px; border:1px solid var(--border); border-radius:10px;">
+</div>
+
 <div class="btn-group">
+
+  
   <button id="btnSalvar" class="primary" onclick="addPromo()">
     Salvar Promoção
   </button>
@@ -767,6 +849,7 @@ const grid=document.getElementById("grid");
 
 let diasSel=[];
 let editingPromoId=null;
+let produtoVinculado = null;
 
 document.querySelectorAll(".day").forEach(d=>{
   d.onclick=()=>{
@@ -798,6 +881,56 @@ fileInput.onchange = () => {
     `;
   }
 };
+
+async function buscarProdutos(){
+
+  const termo = document.getElementById("buscaProduto").value.toLowerCase();
+
+  if(!termo){
+    document.getElementById("resultadoProdutos").innerHTML = "";
+    return;
+  }
+
+  const { data } = await sb
+    .from("produtos")
+    .select("id,nome")
+    .ilike("nome", `%${termo}%`)
+    .limit(10);
+
+  document.getElementById("resultadoProdutos").innerHTML =
+    (data || []).map(p => `
+      <div style="padding:8px; cursor:pointer; border-bottom:1px solid #eee;"
+           onclick="selecionarProduto('${p.id}','${p.nome}')">
+        ${p.nome}
+      </div>
+    `).join("");
+}
+
+function selecionarProduto(id,nome){
+
+  produtoVinculado = id;
+
+  document.getElementById("produtoSelecionado").style.display = "block";
+
+  
+document.getElementById("produtoSelecionado").innerHTML = `
+  <strong>PRODUTO VINCULADO</strong>
+  <span>${nome}</span>
+  <button class="secondary"
+          onclick="removerProdutoVinculado()">
+    Remover
+  </button>
+`;
+
+  document.getElementById("resultadoProdutos").innerHTML = "";
+  document.getElementById("buscaProduto").value = "";
+}
+
+function removerProdutoVinculado(){
+  produtoVinculado = null;
+  document.getElementById("produtoSelecionado").style.display = "none";
+}
+  
 async function loadPromos(){
   const termo=(searchPromo.value||"").toLowerCase();
   const {data}=await sb.from("promocoes").select("*").order("created_at",{ascending:false});
@@ -853,12 +986,13 @@ async function addPromo(){
   /* ================== MODO EDIÇÃO ================== */
   if(editingPromoId){
 
-    let updateData = {
-      tipo: tipoInput.value,
-      dias_semana: diasSel,
-      hora_inicio: horaInicioInput.value,
-      hora_fim: horaFimInput.value
-    };
+let updateData = {
+  tipo: tipoInput.value,
+  dias_semana: diasSel,
+  hora_inicio: horaInicioInput.value,
+  hora_fim: horaFimInput.value,
+  produto_id: produtoVinculado
+};
 
     /* 🔥 SE ESCOLHEU NOVA FOTO */
     if(f){
@@ -910,14 +1044,15 @@ async function addPromo(){
   const { data: urlData } =
     sb.storage.from("promocoes").getPublicUrl(path);
 
-  await sb.from("promocoes").insert({
-    url: urlData.publicUrl,
-    tipo: tipoInput.value,
-    dias_semana: diasSel,
-    hora_inicio: horaInicioInput.value,
-    hora_fim: horaFimInput.value,
-    ativo: true
-  });
+await sb.from("promocoes").insert({
+  url: urlData.publicUrl,
+  tipo: tipoInput.value,
+  dias_semana: diasSel,
+  hora_inicio: horaInicioInput.value,
+  hora_fim: horaFimInput.value,
+  ativo: true,
+  produto_id: produtoVinculado
+});
 
   resetForm();
   loadPromos();
@@ -943,6 +1078,19 @@ async function editarPromo(id){
     .single();
 
   editingPromoId = id;
+  produtoVinculado = data.produto_id;
+
+if(produtoVinculado){
+  const { data: produto } = await sb
+    .from("produtos")
+    .select("nome")
+    .eq("id", produtoVinculado)
+    .single();
+
+  if(produto){
+    selecionarProduto(produtoVinculado, produto.nome);
+  }
+}
 document.getElementById("btnCancelar").style.display = "inline-block";
 document.getElementById("btnSalvar").innerText = "Atualizar Promoção";
   tipoInput.value = data.tipo;
@@ -983,6 +1131,10 @@ function resetForm(){
   tipoInput.value = "IMG";
   horaInicioInput.value = "00:00";
   horaFimInput.value = "23:59";
+  produtoVinculado = null;
+document.getElementById("produtoSelecionado").style.display = "none";
+document.getElementById("resultadoProdutos").innerHTML = "";
+document.getElementById("buscaProduto").value = "";
 }
 
 loadPromos();
