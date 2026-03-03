@@ -1154,7 +1154,6 @@ const fileInput=document.getElementById("file");
 const horaInicioInput=document.getElementById("hora_inicio");
 const horaFimInput=document.getElementById("hora_fim");
 const preview=document.getElementById("preview");
-const grid=document.getElementById("grid");
 
 let diasSel=[];
 let editingPromoId=null;
@@ -1247,80 +1246,7 @@ function removerProdutoVinculado(){
   produtoVinculado = null;
   document.getElementById("produtoSelecionado").style.display = "none";
 }
-  
-async function loadPromos(){
 
-  const termo = (document.getElementById("searchPromo").value || "")
-    .toLowerCase();
-
-  const { data } = await sb
-    .from("promocoes")
-    .select(`
-      *,
-      produtos (
-        nome
-      )
-    `)
-    .order("created_at",{ascending:false});
-
-  grid.innerHTML = (data || [])
-    .filter(p =>
-      (p.tipo || "").toLowerCase().includes(termo)
-    )
-    .map(p=>`
-      <div class="card">
-
-        <div class="media">
-          ${p.tipo==="VIDEO"
-            ? `<video src="${p.url}" muted autoplay loop></video>`
-            : `<img src="${p.url}">`}
-        </div>
-
-        <div class="meta">
-          <span class="badge ${p.ativo?'on':'off'}">
-            ${p.tipo}
-          </span>
-
-          ${p.produtos?.nome 
-            ? `<div style="
-                font-size:10px;
-                font-weight:700;
-                color:#6b7280;
-                white-space:nowrap;
-                overflow:hidden;
-                text-overflow:ellipsis;">
-                🍽 ${p.produtos.nome}
-              </div>`
-            : ""
-          }
-
-          <div>⏰ ${p.hora_inicio} → ${p.hora_fim}</div>
-        </div>
-
-        <div class="card-footer">
-
-          <button class="edit-btn"
-            onclick="editarPromo('${p.id}')">
-            ✏️
-          </button>
-          
-          <label class="switch">
-            <input type="checkbox"
-              ${p.ativo?'checked':''}
-              onchange="togglePromo('${p.id}',${p.ativo})">
-            <span class="slider"></span>
-          </label>
-
-          <button class="danger small-x"
-            onclick="delPromo('${p.id}')">
-            X
-          </button>
-
-        </div>
-
-      </div>
-    `).join("");
-}
 async function addPromo(){
 
   const btn = document.getElementById("btnSalvar");
@@ -1404,8 +1330,7 @@ async function addPromo(){
     }
 
     resetForm();
-    loadPromos();
-
+loadCalendarPromos();
   }
   catch(e){
     console.error(e);
@@ -1418,13 +1343,13 @@ async function addPromo(){
 
 async function togglePromo(id,ativo){
   await sb.from("promocoes").update({ativo:!ativo}).eq("id",id);
-  loadPromos();
+loadCalendarPromos();
 }
 
 async function delPromo(id){
   if(!confirm("Excluir mídia?"))return;
   await sb.from("promocoes").delete().eq("id",id);
-  loadPromos();
+loadCalendarPromos();
 }
 
 async function editarPromo(id){
@@ -1771,13 +1696,7 @@ function closeDayModal(){
   document.getElementById("dayModal").classList.remove("open");
 }
 </script>
-<div id="promoPanel" class="modal" onclick="if(event.target.id==='promoPanel')closePromoPanel()">
-  <div class="modal-box" style="max-width:600px;grid-template-columns:1fr;">
 
-    <div class="edit-area" id="promoPanelContent"></div>
-
-  </div>
-</div>
 
 <div id="dayModal" class="day-modal">
   <div class="day-box" id="dayContent"></div>
