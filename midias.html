@@ -666,28 +666,6 @@ button.danger{
   margin-top:6px;
 }
 
-#resultadoProdutos{
-  margin-top:6px;
-  border:1px solid var(--border);
-  border-radius:12px;
-  background:#fff;
-  box-shadow:0 8px 20px rgba(0,0,0,.06);
-  overflow:auto;
-  max-height:160px;
-}
-
-/* itens da busca */
-#resultadoProdutos div{
-  padding:10px 14px;
-  font-size:13px;
-  font-weight:600;
-  cursor:pointer;
-  transition:.15s;
-}
-
-#resultadoProdutos div:hover{
-  background:#f1f5f9;
-}
 
 /* card produto vinculado */
 #produtoSelecionado{
@@ -725,6 +703,49 @@ button.danger{
   border-radius:10px;
 }
 
+/* ================= BUSCA PRODUTO DROPDOWN FIX ================= */
+
+.produto-wrapper{
+  position:relative;
+}
+
+#resultadoProdutos{
+  position:absolute;
+  top:100%;
+  left:0;
+  right:0;
+  margin-top:6px;
+
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:12px;
+  box-shadow:0 12px 30px rgba(0,0,0,.12);
+
+  max-height:180px;
+  overflow-y:auto;
+
+  z-index:50;
+  display:none;
+}
+
+#resultadoProdutos.active{
+  display:block;
+}
+
+#resultadoProdutos div{
+  padding:12px 14px;
+  font-size:13px;
+  font-weight:600;
+  cursor:pointer;
+  transition:.15s;
+}
+
+#resultadoProdutos div:hover{
+  background:#f1f5f9;
+}
+
+
+  
 
 </style>
 </head>
@@ -769,12 +790,14 @@ button.danger{
 <div class="preview" id="preview">Pré-visualização</div>
 
 <label>Vincular Produto</label>
-<input id="buscaProduto" 
-       placeholder="Pesquisar produto..."
-       oninput="buscarProdutos()">
 
-<div id="resultadoProdutos" 
-     style="max-height:150px; overflow:auto;"></div>
+<div class="produto-wrapper">
+  <input id="buscaProduto" 
+         placeholder="Pesquisar produto..."
+         oninput="buscarProdutos()">
+
+  <div id="resultadoProdutos"></div>
+</div>
 
 <div id="produtoSelecionado" 
      style="display:none; padding:10px; border:1px solid var(--border); border-radius:10px;">
@@ -885,9 +908,11 @@ fileInput.onchange = () => {
 async function buscarProdutos(){
 
   const termo = document.getElementById("buscaProduto").value.toLowerCase();
+  const box = document.getElementById("resultadoProdutos");
 
   if(!termo){
-    document.getElementById("resultadoProdutos").innerHTML = "";
+    box.classList.remove("active");
+    box.innerHTML = "";
     return;
   }
 
@@ -897,13 +922,19 @@ async function buscarProdutos(){
     .ilike("nome", `%${termo}%`)
     .limit(10);
 
-  document.getElementById("resultadoProdutos").innerHTML =
-    (data || []).map(p => `
-      <div style="padding:8px; cursor:pointer; border-bottom:1px solid #eee;"
-           onclick="selecionarProduto('${p.id}','${p.nome}')">
-        ${p.nome}
-      </div>
-    `).join("");
+  if(!data || !data.length){
+    box.classList.remove("active");
+    box.innerHTML = "";
+    return;
+  }
+
+  box.innerHTML = data.map(p => `
+    <div onclick="selecionarProduto('${p.id}','${p.nome}')">
+      ${p.nome}
+    </div>
+  `).join("");
+
+  box.classList.add("active");
 }
 
 function selecionarProduto(id,nome){
@@ -922,8 +953,11 @@ document.getElementById("produtoSelecionado").innerHTML = `
   </button>
 `;
 
-  document.getElementById("resultadoProdutos").innerHTML = "";
-  document.getElementById("buscaProduto").value = "";
+const box = document.getElementById("resultadoProdutos");
+box.classList.remove("active");
+box.innerHTML = "";
+
+document.getElementById("buscaProduto").value = "";
 }
 
 function removerProdutoVinculado(){
