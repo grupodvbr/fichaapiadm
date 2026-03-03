@@ -105,7 +105,8 @@ body{
   flex-direction:column;
   gap:16px;
   box-shadow:var(--shadow-sm);
-  overflow:auto;
+  overflow-y:auto;
+  overflow-x:hidden;
 }
 
 .panel h2{
@@ -168,7 +169,9 @@ textarea{
 /* ===== PREVIEW PROFISSIONAL AJUSTADO ===== */
 
 .preview{
-  height:420px;                /* 🔥 AUMENTADO */
+  min-height:280px;      /* altura mínima */
+  height:40vh;           /* proporcional à tela */
+  max-height:520px;      /* limite máximo */
   border-radius:14px;
   border:2px dashed var(--border);
   background:#0f172a;
@@ -557,10 +560,12 @@ button.danger{
     padding:5px 10px;
   }
 
-  .preview{
-    height:380px;
-    font-size:11px;
-  }
+.preview{
+  min-height:260px;
+  height:45vh;
+  max-height:480px;
+  font-size:11px;
+}
 
   button.primary{
     height:36px;
@@ -760,24 +765,17 @@ button.danger{
 
 <div class="container">
 
-  <div class="panel">
+<div class="panel">
 
-    <h2>NOVA PROMOÇÃO</h2>
+  <h2>NOVA PROMOÇÃO</h2>
 
-    <label>Arquivo</label>
-    <input id="file" type="file" accept="image/*,video/*">
+  <label>Arquivo</label>
+  <input id="file" type="file" accept="image/*,video/*">
 
-    <div class="row">
-      <select id="tipo">
-        <option value="IMG">Imagem</option>
-        <option value="VIDEO">Vídeo</option>
-      </select>
-
-      <div class="row">
-        <input id="hora_inicio" type="time" value="00:00">
-        <input id="hora_fim" type="time" value="23:59">
-      </div>
-    </div>
+  <div class="row">
+    <input id="hora_inicio" type="time" value="00:00">
+    <input id="hora_fim" type="time" value="23:59">
+  </div>
 
     <div class="days">
       <div class="day" data-v="1">Seg</div>
@@ -866,7 +864,6 @@ const sb = supabase.createClient(
 /* ===================== PROMOÇÕES ===================== */
 
 const fileInput=document.getElementById("file");
-const tipoInput=document.getElementById("tipo");
 const horaInicioInput=document.getElementById("hora_inicio");
 const horaFimInput=document.getElementById("hora_fim");
 const preview=document.getElementById("preview");
@@ -885,27 +882,24 @@ document.querySelectorAll(".day").forEach(d=>{
 });
 
 fileInput.onchange = () => {
+
   const f = fileInput.files[0];
   if (!f) return;
 
   const url = URL.createObjectURL(f);
 
-  if (f.type.startsWith("video")) {
-    preview.innerHTML = `
-      <video 
-        src="${url}" 
-        autoplay 
-        muted 
-        loop 
-        playsinline
-      ></video>
-    `;
-  } else {
-    preview.innerHTML = `
-      <img src="${url}">
-    `;
-  }
+  /* 🔥 DETECTA AUTOMATICAMENTE */
+  const tipoDetectado = f.type.startsWith("video")
+    ? "VIDEO"
+    : "IMG";
+
+  fileInput.dataset.tipo = tipoDetectado; // salva temporariamente
+
+  preview.innerHTML = tipoDetectado === "VIDEO"
+    ? `<video src="${url}" autoplay muted loop playsinline></video>`
+    : `<img src="${url}">`;
 };
+  
 
 async function buscarProdutos(){
 
@@ -968,67 +962,77 @@ function removerProdutoVinculado(){
 }
   
 async function loadPromos(){
-  const termo=(searchPromo.value||"").toLowerCase();
-const {data}=await sb.from("promocoes")
-  .select(`
-    *,
-    produtos (
-      nome
+
+  const termo = (document.getElementById("searchPromo").value || "")
+    .toLowerCase();
+
+  const { data } = await sb
+    .from("promocoes")
+    .select(`
+      *,
+      produtos (
+        nome
+      )
+    `)
+    .order("created_at",{ascending:false});
+
+  grid.innerHTML = (data || [])
+    .filter(p =>
+      (p.tipo || "").toLowerCase().includes(termo)
     )
-  `)
-  .order("created_at",{ascending:false});
-  grid.innerHTML=(data||[])
-  .filter(p=>(p.tipo||"").toLowerCase().includes(termo))
-.map(p=>`
-  <div class="card">
-    <div class="media">
-      ${p.tipo==="VIDEO"
-        ? `<video src="${p.url}" muted autoplay loop></video>`
-        : `<img src="${p.url}">`}
-    </div>
+    .map(p=>`
+      <div class="card">
 
-<div class="meta">
-  <span class="badge ${p.ativo?'on':'off'}">
-    ${p.tipo}
-  </span>
+        <div class="media">
+          ${p.tipo==="VIDEO"
+            ? `<video src="${p.url}" muted autoplay loop></video>`
+            : `<img src="${p.url}">`}
+        </div>
 
-  ${p.produtos?.nome 
-    ? `<div style="font-size:10px;
-                   font-weight:700;
-                   color:#6b7280;
-                   white-space:nowrap;
-                   overflow:hidden;
-                   text-overflow:ellipsis;">
-         🍽 ${p.produtos.nome}
-       </div>`
-    : ""
-  }
+        <div class="meta">
+          <span class="badge ${p.ativo?'on':'off'}">
+            ${p.tipo}
+          </span>
 
-  <div>⏰ ${p.hora_inicio} → ${p.hora_fim}</div>
-</div>
+          ${p.produtos?.nome 
+            ? `<div style="
+                font-size:10px;
+                font-weight:700;
+                color:#6b7280;
+                white-space:nowrap;
+                overflow:hidden;
+                text-overflow:ellipsis;">
+                🍽 ${p.produtos.nome}
+              </div>`
+            : ""
+          }
 
-    <div class="card-footer">
+          <div>⏰ ${p.hora_inicio} → ${p.hora_fim}</div>
+        </div>
 
-      <button class="edit-btn"
-        onclick="editarPromo('${p.id}')">
-        ✏️
-      </button>
-      
-      <label class="switch">
-        <input type="checkbox"
-          ${p.ativo?'checked':''}
-          onchange="togglePromo('${p.id}',${p.ativo})">
-        <span class="slider"></span>
-      </label>
+        <div class="card-footer">
 
-      <button class="danger small-x"
-        onclick="delPromo('${p.id}')">
-        X
-      </button>
+          <button class="edit-btn"
+            onclick="editarPromo('${p.id}')">
+            ✏️
+          </button>
+          
+          <label class="switch">
+            <input type="checkbox"
+              ${p.ativo?'checked':''}
+              onchange="togglePromo('${p.id}',${p.ativo})">
+            <span class="slider"></span>
+          </label>
 
-    </div>
-  </div>
-`).join("");
+          <button class="danger small-x"
+            onclick="delPromo('${p.id}')">
+            X
+          </button>
+
+        </div>
+
+      </div>
+    `).join("");
 }
 
 async function addPromo(){
@@ -1042,12 +1046,16 @@ async function addPromo(){
   if(editingPromoId){
 
 let updateData = {
-  tipo: tipoInput.value,
   dias_semana: diasSel,
   hora_inicio: horaInicioInput.value,
   hora_fim: horaFimInput.value,
   produto_id: produtoVinculado
 };
+
+/* só atualiza tipo se escolher novo arquivo */
+if (fileInput.dataset.tipo) {
+  updateData.tipo = fileInput.dataset.tipo;
+}
 
     /* 🔥 SE ESCOLHEU NOVA FOTO */
     if(f){
@@ -1101,7 +1109,7 @@ let updateData = {
 
 await sb.from("promocoes").insert({
   url: urlData.publicUrl,
-  tipo: tipoInput.value,
+  tipo: fileInput.dataset.tipo || "IMG",
   dias_semana: diasSel,
   hora_inicio: horaInicioInput.value,
   hora_fim: horaFimInput.value,
@@ -1148,7 +1156,6 @@ if(produtoVinculado){
 }
 document.getElementById("btnCancelar").style.display = "inline-block";
 document.getElementById("btnSalvar").innerText = "Atualizar Promoção";
-  tipoInput.value = data.tipo;
   horaInicioInput.value = data.hora_inicio;
   horaFimInput.value = data.hora_fim;
 
@@ -1161,13 +1168,15 @@ document.getElementById("btnSalvar").innerText = "Atualizar Promoção";
   });
 
   /* 🔥 MOSTRA IMAGEM ORIGINAL NO PREVIEW */
-  if(data.url){
-    preview.innerHTML = data.tipo === "VIDEO"
-      ? `<video src="${data.url}" autoplay muted loop></video>`
-      : `<img src="${data.url}">`;
-  }else{
-    preview.innerHTML = "Pré-visualização";
-  }
+if(data.url){
+  preview.innerHTML = data.tipo === "VIDEO"
+    ? `<video src="${data.url}" autoplay muted loop></video>`
+    : `<img src="${data.url}">`;
+
+  fileInput.dataset.tipo = data.tipo; // mantém tipo original
+}else{
+  preview.innerHTML = "Pré-visualização";
+}
 
   /* limpa input file (não pode preencher programaticamente) */
   fileInput.value = "";
@@ -1183,7 +1192,6 @@ function resetForm(){
     d.classList.remove("active");
   });
 
-  tipoInput.value = "IMG";
   horaInicioInput.value = "00:00";
   horaFimInput.value = "23:59";
   produtoVinculado = null;
@@ -1230,28 +1238,37 @@ async function loadBuffet(){
 }
 
 function renderBuffet(){
-  const term=(buscaBuffet.value||"").toLowerCase();
-  const setor=filtroSetor.value;
 
-  buffetList.innerHTML=buffetItems
-  .filter(i=>
-    (i.nome||"").toLowerCase().includes(term) &&
-    (!setor||i.tipo===setor)
-  )
-  .map(i=>`
-    <div class="buffet-item" onclick="selectItem('${i.id}')">
-      <img src="${i.foto_url||''}">
-      <div>
-        <b>${i.nome}</b><br>
-        <small>${i.descricao||''}</small><br>
-        <small style="opacity:.6">${i.tipo||''}</small>
+  const term = (document.getElementById("buscaBuffet").value || "")
+    .toLowerCase();
+
+  const setor = document.getElementById("filtroSetor").value;
+
+  const buffetList = document.getElementById("buffetList");
+
+  buffetList.innerHTML = buffetItems
+    .filter(i =>
+      (i.nome || "").toLowerCase().includes(term) &&
+      (!setor || i.tipo === setor)
+    )
+    .map(i=>`
+      <div class="buffet-item" onclick="selectItem('${i.id}')">
+
+        <img src="${i.foto_url || ''}">
+
+        <div>
+          <b>${i.nome}</b><br>
+          <small>${i.descricao || ''}</small><br>
+          <small style="opacity:.6">${i.tipo || ''}</small>
+        </div>
+
+        <button class="toggle ${i.cardapio?'on':'off'}"
+          onclick="toggleCardapio(event,'${i.id}',${i.cardapio})">
+          ${i.cardapio?'NO CARDÁPIO':'FORA'}
+        </button>
+
       </div>
-      <button class="toggle ${i.cardapio?'on':'off'}"
-        onclick="toggleCardapio(event,'${i.id}',${i.cardapio})">
-        ${i.cardapio?'NO CARDÁPIO':'FORA'}
-      </button>
-    </div>
-  `).join("");
+    `).join("");
 }
 
 function selectItem(id){
