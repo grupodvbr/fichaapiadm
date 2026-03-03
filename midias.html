@@ -968,8 +968,14 @@ function removerProdutoVinculado(){
   
 async function loadPromos(){
   const termo=(searchPromo.value||"").toLowerCase();
-  const {data}=await sb.from("promocoes").select("*").order("created_at",{ascending:false});
-
+const {data}=await sb.from("promocoes")
+  .select(`
+    *,
+    produtos (
+      nome
+    )
+  `)
+  .order("created_at",{ascending:false});
   grid.innerHTML=(data||[])
   .filter(p=>(p.tipo||"").toLowerCase().includes(termo))
 .map(p=>`
@@ -980,12 +986,25 @@ async function loadPromos(){
         : `<img src="${p.url}">`}
     </div>
 
-    <div class="meta">
-      <span class="badge ${p.ativo?'on':'off'}">
-        ${p.tipo}
-      </span>
-      <div>⏰ ${p.hora_inicio} → ${p.hora_fim}</div>
-    </div>
+<div class="meta">
+  <span class="badge ${p.ativo?'on':'off'}">
+    ${p.tipo}
+  </span>
+
+  ${p.produtos?.nome 
+    ? `<div style="font-size:10px;
+                   font-weight:700;
+                   color:#6b7280;
+                   white-space:nowrap;
+                   overflow:hidden;
+                   text-overflow:ellipsis;">
+         🍽 ${p.produtos.nome}
+       </div>`
+    : ""
+  }
+
+  <div>⏰ ${p.hora_inicio} → ${p.hora_fim}</div>
+</div>
 
     <div class="card-footer">
 
