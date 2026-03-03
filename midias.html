@@ -650,6 +650,15 @@ button.danger{
   padding:0;
   font-size:11px;
 }
+
+.btn-group{
+  display:flex;
+  gap:10px;
+}
+
+.btn-group button{
+  flex:1;              /* 🔥 divide o espaço igualmente */
+}
 </style>
 </head>
 <body>
@@ -691,7 +700,7 @@ button.danger{
     </div>
 
     <div class="preview" id="preview">Pré-visualização</div>
-<div style="display:flex; gap:10px;">
+<div class="btn-group">
   <button id="btnSalvar" class="primary" onclick="addPromo()">
     Salvar Promoção
   </button>
