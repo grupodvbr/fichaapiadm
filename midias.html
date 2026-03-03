@@ -752,6 +752,41 @@ button.danger{
 }
 
 
+ /* ================= LOADING BUTTON ================= */
+
+.btn-loading{
+  position:relative;
+  pointer-events:none;
+  opacity:.8;
+}
+
+.btn-loading::after{
+  content:"";
+  position:absolute;
+  width:18px;
+  height:18px;
+  border:3px solid rgba(255,255,255,.4);
+  border-top:3px solid #fff;
+  border-radius:50%;
+  animation:spin .8s linear infinite;
+}
+
+@keyframes spin{
+  from{transform:rotate(0deg);}
+  to{transform:rotate(360deg);}
+}
+
+
+
+
+
+
+
+
+
+
+
+
   
 
 </style>
@@ -806,9 +841,9 @@ button.danger{
 <div class="btn-group">
 
   
-  <button id="btnSalvar" class="primary" onclick="addPromo()">
-    Salvar Promoção
-  </button>
+<button id="btnSalvar" class="primary" onclick="addPromo()">
+  Salvar Promoção
+</button>
 
   <button id="btnCancelar" class="secondary" 
           onclick="cancelEdit()" 
@@ -1034,91 +1069,99 @@ async function loadPromos(){
       </div>
     `).join("");
 }
-
 async function addPromo(){
 
-  if(!diasSel.length)
-    return alert("Selecione os dias");
+  const btn = document.getElementById("btnSalvar");
 
-  const f = fileInput.files[0];
+  if(!diasSel.length){
+    alert("Selecione os dias");
+    return;
+  }
 
-  /* ================== MODO EDIÇÃO ================== */
-  if(editingPromoId){
+  btn.classList.add("btn-loading");
 
-let updateData = {
-  dias_semana: diasSel,
-  hora_inicio: horaInicioInput.value,
-  hora_fim: horaFimInput.value,
-  produto_id: produtoVinculado
-};
+  try{
 
-/* só atualiza tipo se escolher novo arquivo */
-if (fileInput.dataset.tipo) {
-  updateData.tipo = fileInput.dataset.tipo;
-}
+    const f = fileInput.files[0];
 
-    /* 🔥 SE ESCOLHEU NOVA FOTO */
-    if(f){
-      const ext = f.name.split(".").pop();
-      const path = `promocoes/${Date.now()}.${ext}`;
+    /* ================= MODO EDIÇÃO ================= */
+    if(editingPromoId){
 
-      const { error: uploadError } =
-        await sb.storage.from("promocoes").upload(path, f, {
-          upsert:true
-        });
+      let updateData = {
+        dias_semana: diasSel,
+        hora_inicio: horaInicioInput.value,
+        hora_fim: horaFimInput.value,
+        produto_id: produtoVinculado
+      };
 
-      if(uploadError){
-        alert("Erro ao enviar imagem");
+      if (fileInput.dataset.tipo) {
+        updateData.tipo = fileInput.dataset.tipo;
+      }
+
+      if(f){
+        const ext = f.name.split(".").pop();
+        const path = `promocoes/${Date.now()}.${ext}`;
+
+        const { error } =
+          await sb.storage.from("promocoes").upload(path, f, { upsert:true });
+
+        if(error) throw error;
+
+        const { data } =
+          sb.storage.from("promocoes").getPublicUrl(path);
+
+        updateData.url = data.publicUrl;
+      }
+
+      await sb.from("promocoes")
+        .update(updateData)
+        .eq("id", editingPromoId);
+
+      editingPromoId = null;
+
+    }
+    else{
+
+      /* ================= NOVA PROMOÇÃO ================= */
+
+      if(!f){
+        alert("Selecione um arquivo");
         return;
       }
 
-      const { data: urlData } =
+      const ext = f.name.split(".").pop();
+      const path = `promocoes/${Date.now()}.${ext}`;
+
+      const { error } =
+        await sb.storage.from("promocoes").upload(path, f);
+
+      if(error) throw error;
+
+      const { data } =
         sb.storage.from("promocoes").getPublicUrl(path);
 
-      updateData.url = urlData.publicUrl;
+      await sb.from("promocoes").insert({
+        url: data.publicUrl,
+        tipo: fileInput.dataset.tipo || "IMG",
+        dias_semana: diasSel,
+        hora_inicio: horaInicioInput.value,
+        hora_fim: horaFimInput.value,
+        ativo: true,
+        produto_id: produtoVinculado
+      });
     }
 
-    await sb.from("promocoes")
-      .update(updateData)
-      .eq("id", editingPromoId);
-
-    editingPromoId = null;
     resetForm();
     loadPromos();
-    return;
+
   }
-
-  /* ================== NOVA PROMOÇÃO ================== */
-
-  if(!f)
-    return alert("Selecione um arquivo");
-
-  const ext = f.name.split(".").pop();
-  const path = `promocoes/${Date.now()}.${ext}`;
-
-  const { error: uploadError } =
-    await sb.storage.from("promocoes").upload(path, f);
-
-  if(uploadError){
-    alert("Erro ao enviar imagem");
-    return;
+  catch(e){
+    console.error(e);
+    alert("Erro ao salvar");
   }
-
-  const { data: urlData } =
-    sb.storage.from("promocoes").getPublicUrl(path);
-
-await sb.from("promocoes").insert({
-  url: urlData.publicUrl,
-  tipo: fileInput.dataset.tipo || "IMG",
-  dias_semana: diasSel,
-  hora_inicio: horaInicioInput.value,
-  hora_fim: horaFimInput.value,
-  ativo: true,
-  produto_id: produtoVinculado
-});
-
-  resetForm();
-  loadPromos();
+  finally{
+    btn.classList.remove("btn-loading");
+  }
 }
 
 async function togglePromo(id,ativo){
