@@ -1559,7 +1559,13 @@ let promosCache = [];
 async function loadCalendarPromos(){
   const { data } = await sb
     .from("promocoes")
-    .select("*");
+    .select(`
+      *,
+      produtos (
+        nome,
+        descricao
+      )
+    `);
 
   promosCache = data || [];
   renderCalendar();
@@ -1582,6 +1588,22 @@ function renderCalendar(){
   const monthName = firstDay.toLocaleString("pt-BR",{month:"long"});
   document.getElementById("monthTitle").innerText =
     monthName.charAt(0).toUpperCase()+monthName.slice(1)+" "+year;
+
+  /* 🔥 CABEÇALHO DIAS DA SEMANA */
+  const diasSemana = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+
+  diasSemana.forEach(d=>{
+    calendar.innerHTML += `
+      <div style="
+        font-weight:900;
+        font-size:12px;
+        text-align:center;
+        padding:6px 0;
+        color:#64748b;">
+        ${d}
+      </div>
+    `;
+  });
 
   for(let i=0;i<startWeekDay;i++){
     calendar.innerHTML += `<div></div>`;
@@ -1614,7 +1636,6 @@ function renderCalendar(){
   }
 }
 
-  
 function prevMonth(){
   currentDate.setMonth(currentDate.getMonth()-1);
   renderCalendar();
@@ -1659,13 +1680,24 @@ function openDayModal(day){
               : `<img src="${p.url}">`}
           </div>
 
-          <div class="day-info">
+          <div style="display:flex;flex-direction:column;gap:10px;">
 
             <div class="flag ${p.ativo?'on':'off'}">
               ${p.ativo?'ATIVA':'DESATIVADA'}
             </div>
 
             <div><b>Horário:</b> ${p.hora_inicio} → ${p.hora_fim}</div>
+
+            ${p.produtos ? `
+              <div>
+                <b>Produto:</b> ${p.produtos.nome}
+                ${p.produtos.descricao ? `
+                  <div style="font-size:13px;color:#64748b;">
+                    ${p.produtos.descricao}
+                  </div>
+                ` : ``}
+              </div>
+            ` : ``}
 
             <div class="day-actions">
               <button class="btn-soft"
