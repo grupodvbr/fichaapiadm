@@ -807,38 +807,79 @@ async function loadPromos(){
 }
 
 async function addPromo(){
-  if(!diasSel.length)return alert("Selecione os dias");
 
+  if(!diasSel.length)
+    return alert("Selecione os dias");
+
+  const f = fileInput.files[0];
+
+  /* ================== MODO EDIÇÃO ================== */
   if(editingPromoId){
-    await sb.from("promocoes").update({
-      tipo:tipoInput.value,
-      dias_semana:diasSel,
-      hora_inicio:horaInicioInput.value,
-      hora_fim:horaFimInput.value
-    }).eq("id",editingPromoId);
 
-    editingPromoId=null;
+    let updateData = {
+      tipo: tipoInput.value,
+      dias_semana: diasSel,
+      hora_inicio: horaInicioInput.value,
+      hora_fim: horaFimInput.value
+    };
+
+    /* 🔥 SE ESCOLHEU NOVA FOTO */
+    if(f){
+      const ext = f.name.split(".").pop();
+      const path = `promocoes/${Date.now()}.${ext}`;
+
+      const { error: uploadError } =
+        await sb.storage.from("promocoes").upload(path, f, {
+          upsert:true
+        });
+
+      if(uploadError){
+        alert("Erro ao enviar imagem");
+        return;
+      }
+
+      const { data: urlData } =
+        sb.storage.from("promocoes").getPublicUrl(path);
+
+      updateData.url = urlData.publicUrl;
+    }
+
+    await sb.from("promocoes")
+      .update(updateData)
+      .eq("id", editingPromoId);
+
+    editingPromoId = null;
     resetForm();
     loadPromos();
     return;
   }
 
-  const f=fileInput.files[0];
-  if(!f)return alert("Selecione um arquivo");
+  /* ================== NOVA PROMOÇÃO ================== */
 
-  const ext=f.name.split(".").pop();
-  const path=`promocoes/${Date.now()}.${ext}`;
+  if(!f)
+    return alert("Selecione um arquivo");
 
-  await sb.storage.from("promocoes").upload(path,f);
-  const {data:urlData}=sb.storage.from("promocoes").getPublicUrl(path);
+  const ext = f.name.split(".").pop();
+  const path = `promocoes/${Date.now()}.${ext}`;
+
+  const { error: uploadError } =
+    await sb.storage.from("promocoes").upload(path, f);
+
+  if(uploadError){
+    alert("Erro ao enviar imagem");
+    return;
+  }
+
+  const { data: urlData } =
+    sb.storage.from("promocoes").getPublicUrl(path);
 
   await sb.from("promocoes").insert({
-    url:urlData.publicUrl,
-    tipo:tipoInput.value,
-    dias_semana:diasSel,
-    hora_inicio:horaInicioInput.value,
-    hora_fim:horaFimInput.value,
-    ativo:true
+    url: urlData.publicUrl,
+    tipo: tipoInput.value,
+    dias_semana: diasSel,
+    hora_inicio: horaInicioInput.value,
+    hora_fim: horaFimInput.value,
+    ativo: true
   });
 
   resetForm();
