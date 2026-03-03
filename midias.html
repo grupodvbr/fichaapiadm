@@ -88,10 +88,9 @@ body{
 .container{
   flex:1;
   display:grid;
-  grid-template-columns:520px 1fr; /* 🔥 aumenta área da preview */
+  grid-template-columns:520px 1fr;
   gap:24px;
   padding:24px;
-  overflow:hidden;
 }
 
 /* ================= PAINEL ================= */
@@ -777,7 +776,103 @@ button.danger{
 }
 
 
+/* ================= CALENDÁRIO ================= */
 
+/* ================= CALENDÁRIO RESPONSIVO REAL ================= */
+
+.calendar-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:16px;
+}
+
+.calendar-header h2{
+  font-size:18px;
+  font-weight:900;
+}
+
+.calendar-grid{
+  display:grid;
+  grid-template-columns:repeat(7,minmax(0,1fr));
+  gap:10px;
+  width:100%;
+}
+
+.calendar-day{
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:14px;
+  min-height:140px;
+  padding:8px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  transition:.2s;
+  cursor:pointer;
+  overflow:hidden;
+}
+
+.calendar-day:hover{
+  box-shadow:var(--shadow-md);
+}
+
+.calendar-day-number{
+  font-size:13px;
+  font-weight:900;
+}
+
+.calendar-promos{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  overflow:auto;
+}
+
+.calendar-mini{
+  height:34px;
+  border-radius:6px;
+  overflow:hidden;
+  border:1px solid var(--border);
+}
+
+.calendar-mini img,
+.calendar-mini video{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+/* RESPONSIVO */
+
+@media(max-width:1200px){
+  .calendar-day{min-height:120px;}
+}
+
+@media(max-width:900px){
+  .calendar-grid{
+    grid-template-columns:repeat(4,1fr);
+  }
+}
+
+@media(max-width:600px){
+  .calendar-grid{
+    grid-template-columns:repeat(2,1fr);
+  }
+}
+
+@media(max-width:420px){
+  .calendar-grid{
+    grid-template-columns:1fr;
+  }
+}
+
+
+
+
+
+
+  
 
 
 
@@ -853,12 +948,17 @@ button.danger{
 </div>
   </div>
 
-  <div class="right-area">
-    <div class="search-bar">
-      <input id="searchPromo" placeholder="Pesquisar..." oninput="loadPromos()">
-    </div>
-    <div class="grid" id="grid"></div>
+<div class="right-area">
+
+  <div class="calendar-header">
+    <button onclick="prevMonth()">◀</button>
+    <h2 id="monthTitle"></h2>
+    <button onclick="nextMonth()">▶</button>
   </div>
+
+  <div class="calendar-grid" id="calendar"></div>
+
+</div>
 
 </div>
 
@@ -1243,8 +1343,7 @@ document.getElementById("resultadoProdutos").innerHTML = "";
 document.getElementById("buscaProduto").value = "";
 }
 
-loadPromos();
-  
+loadCalendarPromos();  
 function cancelEdit(){
 
   editingPromoId = null;
@@ -1372,7 +1471,156 @@ async function carregarSetores(){
       .join("")}
   `;
 }
-</script>
 
+
+
+/* ================= CALENDÁRIO ================= */
+
+let currentDate = new Date();
+let promosCache = [];
+
+async function loadCalendarPromos(){
+  const { data } = await sb
+    .from("promocoes")
+    .select("*");
+
+  promosCache = data || [];
+  renderCalendar();
+}
+
+function renderCalendar(){
+
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+
+  const startWeekDay = firstDay.getDay();
+  const totalDays = lastDay.getDate();
+
+  const calendar = document.getElementById("calendar");
+  calendar.innerHTML = "";
+
+  const monthName = firstDay.toLocaleString("pt-BR",{month:"long"});
+  document.getElementById("monthTitle").innerText =
+    monthName.charAt(0).toUpperCase()+monthName.slice(1)+" "+year;
+
+  for(let i=0;i<startWeekDay;i++){
+    calendar.innerHTML += `<div></div>`;
+  }
+
+  for(let day=1; day<=totalDays; day++){
+
+    const dateObj = new Date(year, month, day);
+    const weekDay = dateObj.getDay() === 0 ? 7 : dateObj.getDay();
+
+    const promosDia = promosCache.filter(p =>
+      p.dias_semana?.includes(weekDay)
+    );
+
+    const previews = promosDia.map(p => `
+      <div class="calendar-mini"
+           onclick="event.stopPropagation(); openPromoPanel('${p.id}')">
+        ${p.tipo==="VIDEO"
+          ? `<video src="${p.url}" muted></video>`
+          : `<img src="${p.url}">`}
+      </div>
+    `).join("");
+
+    calendar.innerHTML += `
+      <div class="calendar-day" onclick="openDay(${day})">
+
+        <div class="calendar-day-number">${day}</div>
+
+        <div class="calendar-promos">
+          ${previews}
+        </div>
+
+      </div>
+    `;
+  }
+}
+function prevMonth(){
+  currentDate.setMonth(currentDate.getMonth()-1);
+  renderCalendar();
+}
+
+function nextMonth(){
+  currentDate.setMonth(currentDate.getMonth()+1);
+  renderCalendar();
+}
+
+function openDay(day){
+
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+
+  const dateObj = new Date(year, month, day);
+  const weekDay = dateObj.getDay() === 0 ? 7 : dateObj.getDay();
+
+  const promosDia = promosCache.filter(p =>
+    p.dias_semana?.includes(weekDay)
+  );
+
+  if(!promosDia.length){
+    alert("Nenhuma promoção neste dia.");
+    return;
+  }
+
+  // abre edição da primeira promo (pode evoluir para lista modal depois)
+  editarPromo(promosDia[0].id);
+}
+async function openPromoPanel(id){
+
+  const { data } = await sb
+    .from("promocoes")
+    .select(`*, produtos(nome)`)
+    .eq("id",id)
+    .single();
+
+  document.body.classList.add("modal-open");
+  document.getElementById("promoPanel").classList.add("open");
+
+  document.getElementById("promoPanelContent").innerHTML = `
+    <h3>Promoção</h3>
+
+    <div style="height:220px;border-radius:12px;overflow:hidden;">
+      ${data.tipo==="VIDEO"
+        ? `<video src="${data.url}" autoplay muted loop style="width:100%;height:100%;object-fit:cover;"></video>`
+        : `<img src="${data.url}" style="width:100%;height:100%;object-fit:cover;">`}
+    </div>
+
+    <div><b>Produto:</b> ${data.produtos?.nome || "—"}</div>
+    <div><b>Horário:</b> ${data.hora_inicio} → ${data.hora_fim}</div>
+
+    <div style="display:flex;gap:10px;margin-top:10px;">
+      <button class="primary" onclick="editarPromo('${data.id}');closePromoPanel()">Editar</button>
+
+      <button class="secondary"
+        onclick="togglePromo('${data.id}',${data.ativo});closePromoPanel()">
+        ${data.ativo?'Desativar':'Ativar'}
+      </button>
+
+      <button class="danger"
+        onclick="delPromo('${data.id}');closePromoPanel()">
+        Excluir
+      </button>
+    </div>
+  `;
+}
+
+function closePromoPanel(){
+  document.body.classList.remove("modal-open");
+  document.getElementById("promoPanel").classList.remove("open");
+}
+</script>
+<div id="promoPanel" class="modal" onclick="if(event.target.id==='promoPanel')closePromoPanel()">
+  <div class="modal-box" style="max-width:600px;grid-template-columns:1fr;">
+
+    <div class="edit-area" id="promoPanelContent"></div>
+
+  </div>
+</div>
 </body>
 </html>
