@@ -456,17 +456,6 @@ counters.forEach(c=>{
 });
 
 
-function requestFull(){
-  const el = document.documentElement;
-  if (el.requestFullscreen) el.requestFullscreen();
-  else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-}
-document.addEventListener("click", () => {
-  if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-    requestFull();
-  }
-}, { once:true });
-
 </script>
 
 <div id="modalFicha" style="
