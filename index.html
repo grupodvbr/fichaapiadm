@@ -258,7 +258,12 @@ html,body{
   padding:0 24px;
   font-weight:800;
 }
+/* ===== HEADER SÓ NO HOME (quando oculto, iframe vira tela cheia) ===== */
+.main.no-header .header{
+  display:none !important;
+}
 
+  
 #pageTitle{
   color:#020617;
 }
@@ -748,6 +753,14 @@ document.querySelector(".more-btn").classList.remove("active");
   };
 
   document.getElementById("pageTitle").innerText = titles[page] || "CB SYSTEMS®";
+
+  // ✅ Cabeçalho só no home.html
+  const main = document.querySelector(".main");
+  if(page === "home.html"){
+    main.classList.remove("no-header");
+  }else{
+    main.classList.add("no-header");
+  }
 }
 async function check(){
   const { data } = await sb.auth.getSession();
