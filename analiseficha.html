@@ -10,9 +10,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-/* =========================================================
-   VARIÁVEIS
-========================================================= */
 :root{
   --primary:#2563eb;
   --primary-dark:#1e40af;
@@ -36,10 +33,8 @@
   --shadow-lg:0 40px 90px rgba(0,0,0,.35);
 }
 
-/* =========================================================
-   RESET / BASE
-========================================================= */
-*{
+
+{
   box-sizing:border-box;
   -webkit-font-smoothing:antialiased;
 }
@@ -54,16 +49,12 @@ body{
   color:var(--text);
 }
 
-/* trava scroll quando modal aberto */
 body.modal-open{
   overflow:hidden;
   position:fixed;
   width:100%;
 }
 
-/* =========================================================
-   FILTROS FIXOS PREMIUM
-========================================================= */
 .filters{
   position:sticky;
   top:0;
@@ -82,7 +73,6 @@ body.modal-open{
   box-shadow:0 10px 30px rgba(0,0,0,.06);
 }
 
-/* mesma linha sempre */
 .filters input{
   flex:2;
   min-width:220px;
@@ -112,18 +102,13 @@ body.modal-open{
   box-shadow:0 0 0 3px rgba(37,99,235,.18);
 }
 
-/* =========================================================
-   GRID PRINCIPAL
-========================================================= */
 .grid{
   display:grid;
   grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));
   gap:20px;
   padding:20px;
 }
-/* =========================================================
-   CARD
-========================================================= */
+
 .card{
   background:var(--card);
   border-radius:22px;
@@ -141,7 +126,7 @@ body.modal-open{
 
 .card img{
   width:100%;
-  height:130px;   /* 🔥 diminui a imagem */
+  height:130px;  
   object-fit:cover;
   transition:.3s ease;
 }
@@ -151,7 +136,7 @@ body.modal-open{
 }
 
 .card-body{
-  padding:12px;   /* 👈 menos espaço interno */
+  padding:12px;  
 }
 
 .card-body h3{
@@ -165,12 +150,10 @@ body.modal-open{
   -webkit-box-orient:vertical;
   overflow:hidden;
 
-  min-height:42px;   /* 🔥 trava altura em 2 linhas */
+  min-height:42px;  
 }
 
-/* =========================================================
-   BADGES
-========================================================= */
+
 .badges{
   display:flex;
   flex-wrap:wrap;
@@ -196,9 +179,6 @@ body.modal-open{
   backdrop-filter:blur(2px);
 }
 
-/* =========================================================
-   MODAL OVERLAY
-========================================================= */
 .modal{
   position:fixed;
   inset:0;
@@ -214,13 +194,10 @@ body.modal-open{
   z-index:100;
 }
 
-/* =========================================================
-   MODAL BOX
-========================================================= */
 .modal-box{
   background:#fff;
   width:96vw;
-  max-width:1440px; /* antes: 1200px */
+  max-width:1440px;
   max-height:92vh;
   border-radius:26px;
   overflow:hidden;
@@ -236,9 +213,6 @@ body.modal-open{
   to{ opacity:1; transform:scale(1) }
 }
 
-/* =========================================================
-   HEADER DO MODAL
-========================================================= */
 .modal-header{
   display:grid;
   grid-template-columns:34% 66%;
