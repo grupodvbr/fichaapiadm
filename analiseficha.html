@@ -179,13 +179,13 @@ body.modal-open{
 }
 
 .modal-left{
-  border-radius:22px;
+  border-radius:18px;
   overflow:hidden;
-  box-shadow:0 30px 80px rgba(0,0,0,.45);
+  box-shadow:0 20px 60px rgba(0,0,0,.35);
   background:#000;
-  height:100%;
-  min-height:260px;     /* 👈 diminui */
-  max-height:360px;     /* 👈 trava a altura */
+
+  min-height:200px;
+  max-height:260px;
 }
 
 .modal-img{
@@ -234,8 +234,8 @@ body.modal-open{
    TEXTOS DO MODAL
 ========================================================= */
 .modal-body h3{
-  margin:20px 0 10px;
-  font-size:15px;
+  margin:16px 0 8px;
+  font-size:14px;
   font-weight:900;
   letter-spacing:.02em;
 }
@@ -250,7 +250,7 @@ body.modal-open{
   border:none;
   height:1px;
   background:linear-gradient(90deg,transparent,var(--border),transparent);
-  margin:22px 0;
+  margin:14px 0;
 }
 
 /* =========================================================
@@ -288,11 +288,11 @@ body.modal-open{
    INPUTS / SELECTS
 ========================================================= */
 input, select, textarea{
-  height:44px;
-  border-radius:12px;
+  height:38px;
+  border-radius:10px;
   border:1px solid var(--border);
-  padding:0 14px;
-  font-size:14px;
+  padding:0 12px;
+  font-size:13px;
   font-weight:700;
   width:100%;
   background:#fff;
@@ -325,8 +325,9 @@ button{
 }
 
 .btn-add{
-  height:44px;
-  padding:0 18px;
+  height:38px;
+  padding:0 14px;
+  font-size:11px;
   border-radius:10px;
   background:#0f172a;
   color:#fff;
@@ -462,9 +463,10 @@ button{
 }
 
 .table tbody td{
-  padding:6px 8px;
+  padding:4px 6px;
   border-bottom:1px solid var(--border);
   vertical-align:middle;
+  font-size:12px;
 }
 
 .table tbody tr:hover{
@@ -480,21 +482,21 @@ button{
 .resumo{
   display:grid;
   grid-template-columns:repeat(4,1fr);
-  gap:10px;
+  gap:8px;
 }
 
 .resumo .box{
   background:#f8fafc;
   border:1px solid var(--border);
-  border-radius:12px;
-  padding:10px;
-  text-align:center;
+  border-radius:10px;
+  padding:6px 8px;
+  font-size:11px;
 }
 
 .resumo .box b{
   display:block;
-  font-size:15px;
-  margin-top:4px;
+  font-size:13px;
+  margin-top:2px;
 }
 
 /* ====== NUTRIÇÃO COMPACTA ====== */
@@ -1656,8 +1658,6 @@ mBody.innerHTML = `
 </select>
 
 <hr>
-<hr>
-
 <h3>Integração & Preço ideal</h3>
 
 <div class="grid-2">
@@ -1862,13 +1862,13 @@ ${listaItens.map(i=>`
 
 <h3>Tabela Nutricional (por prato)</h3>
 
-<div class="precificacao">
-  <p>🔥 Calorias: <b>${nutri.calorias.toFixed(1)} kcal</b></p>
-  <p>🥩 Proteínas: <b>${nutri.proteinas.toFixed(1)} g</b></p>
-  <p>🍞 Carboidratos: <b>${nutri.carboidratos.toFixed(1)} g</b></p>
-  <p>🧈 Gorduras: <b>${nutri.gorduras.toFixed(1)} g</b></p>
-  <p>🌾 Fibras: <b>${nutri.fibras.toFixed(1)} g</b></p>
-  <p>🧂 Sódio: <b>${nutri.sodio.toFixed(1)} mg</b></p>
+<div class="nutri-grid">
+  <div class="nutri-item">🔥 Calorias <b>${nutri.calorias.toFixed(1)} kcal</b></div>
+  <div class="nutri-item">🥩 Proteínas <b>${nutri.proteinas.toFixed(1)} g</b></div>
+  <div class="nutri-item">🍞 Carbo <b>${nutri.carboidratos.toFixed(1)} g</b></div>
+  <div class="nutri-item">🧈 Gorduras <b>${nutri.gorduras.toFixed(1)} g</b></div>
+  <div class="nutri-item">🌾 Fibras <b>${nutri.fibras.toFixed(1)} g</b></div>
+  <div class="nutri-item">🧂 Sódio <b>${nutri.sodio.toFixed(1)} mg</b></div>
 </div>
 
 <h3>Modo de preparo</h3>
