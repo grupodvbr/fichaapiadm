@@ -34,7 +34,7 @@
 }
 
 
-{
+*{
   box-sizing:border-box;
   -webkit-font-smoothing:antialiased;
 }
@@ -596,13 +596,18 @@ button{
    TABLET (720px – 1100px)
 ========================= */
 @media (min-width:720px) and (max-width:1100px){
-
   .filters{
     display:grid;
-    grid-template-columns: 1.6fr 1fr;
-    gap:18px;
+    grid-template-columns: 1.6fr 1fr 1fr;
+    gap:12px;
     align-items:center;
   }
+  .filters input,
+  .filters select{
+    width:100%;
+    min-width:0;
+  }
+}
 
   .filters input{
     width:100%;
@@ -938,7 +943,20 @@ button{
   transform:translate(-50%,-50%);
 }
 
+/* filtros com mais selects: mantém alinhado e quebra bonito */
+.filters{
+  flex-wrap:wrap;
+}
 
+.filters input{
+  flex:2 1 260px;
+  min-width:220px;
+}
+
+.filters select{
+  flex:1 1 190px;
+  min-width:170px;
+}
    
 </style>
 </head>
@@ -970,9 +988,41 @@ button{
    
 <div class="filters">
   <input id="filtroNome" type="text" placeholder="Buscar por nome do prato">
-<select id="filtroTipo">
-  <option value="">Todos os tipos</option>
-</select>
+
+  <select id="filtroTipo">
+    <option value="">Todos os tipos</option>
+  </select>
+
+  <select id="filtroStatus">
+    <option value="">Todos (Ativo + Desativado)</option>
+    <option value="ativo">Somente ATIVOS</option>
+    <option value="inativo">Somente DESATIVADOS</option>
+  </select>
+
+  <select id="filtroCMV">
+    <option value="">CMV (todas as faixas)</option>
+    <option value="lt30">CMV < 30%</option>
+    <option value="30_35">CMV 30–35%</option>
+    <option value="35_40">CMV 35–40%</option>
+    <option value="gt40">CMV > 40%</option>
+  </select>
+
+  <select id="filtroMargem">
+    <option value="">Margem (todas as faixas)</option>
+    <option value="lt25">Margem < 25%</option>
+    <option value="25_30">Margem 25–30%</option>
+    <option value="30_40">Margem 30–40%</option>
+    <option value="gt40">Margem > 40%</option>
+  </select>
+
+  <select id="filtroSort">
+    <option value="recent">Ordenar: Mais recente</option>
+    <option value="cmv_desc">Maior CMV</option>
+    <option value="margem_asc">Menor margem</option>
+    <option value="lucro_desc">Maior lucro</option>
+    <option value="custo_desc">Maior custo</option>
+    <option value="az">A–Z</option>
+  </select>
 </div>
 
 <div id="cards" class="grid"></div>
@@ -1184,32 +1234,114 @@ async function carregarCMVCache(){
   console.log("📦 cacheCMV OK:", cacheCMV);
 }
 
+function calcMetricsForList(p){
+  const dados = cacheCMV[p.id] || { cmvBase:0, impostos:[] };
 
+  let totalImpostos = 0;
+  (dados.impostos || []).forEach(i=>{
+    if(i.modalidade === "FIXO") totalImpostos += Number(i.valor);
+    if(i.modalidade === "PERCENTUAL")
+      totalImpostos += (Number(dados.cmvBase||0) * Number(i.valor||0)) / 100;
+  });
+
+  const custoBase = dados.cmvBase > 0
+    ? dados.cmvBase
+    : Number(p.custo_total || p.custo_unitario || 0);
+
+  const custoFinal = dados.cmvBase > 0
+    ? (dados.cmvBase + totalImpostos)
+    : Number(p.custo_total || p.custo_unitario || 0);
+
+  const pv = Number(p.preco_venda || 0);
+
+  const cmvPerc = pv > 0 ? (custoBase / pv) * 100 : null;
+  const lucro = pv > 0 ? (pv - custoFinal) : null;
+  const margem = pv > 0 ? (lucro / pv) * 100 : null;
+
+  return { custoBase, custoFinal, cmvPerc, lucro, margem };
+}
+
+function inRangeCMV(cmv, faixa){
+  if(!faixa) return true;
+  if(cmv == null || isNaN(cmv)) return false;
+
+  if(faixa === "lt30") return cmv < 30;
+  if(faixa === "30_35") return cmv >= 30 && cmv < 35;
+  if(faixa === "35_40") return cmv >= 35 && cmv < 40;
+  if(faixa === "gt40") return cmv >= 40;
+  return true;
+}
+
+function inRangeMargem(margem, faixa){
+  if(!faixa) return true;
+  if(margem == null || isNaN(margem)) return false;
+
+  if(faixa === "lt25") return margem < 25;
+  if(faixa === "25_30") return margem >= 25 && margem < 30;
+  if(faixa === "30_40") return margem >= 30 && margem < 40;
+  if(faixa === "gt40") return margem >= 40;
+  return true;
+}
 
 
 
 
 
    
-/* =====================================================
-   LISTA
-===================================================== */
 function aplicarFiltros() {
 
-  // 🔥 sobe automaticamente
-  window.scrollTo({
-    top:0,
-    behavior:"smooth"
-  });
+  window.scrollTo({ top:0, behavior:"smooth" });
 
   const nomeFiltro = (filtroNome.value || "").toUpperCase().trim();
   const tipoFiltro = filtroTipo.value;
 
-  listaFiltrada = pratos.filter(p => {
-    const nomeOk = !nomeFiltro || p.nome.toUpperCase().includes(nomeFiltro);
+  const statusFiltro = (window.filtroStatus?.value || "");
+  const cmvFaixa = (window.filtroCMV?.value || "");
+  const margemFaixa = (window.filtroMargem?.value || "");
+  const sort = (window.filtroSort?.value || "recent");
+
+  // 1) filtra e já calcula métricas pra usar em faixa + sort
+  const base = [];
+
+  for(const p of pratos){
+    const nomeOk = !nomeFiltro || (p.nome || "").toUpperCase().includes(nomeFiltro);
     const tipoOk = !tipoFiltro || p.tipo === tipoFiltro;
-    return nomeOk && tipoOk;
+
+    // status (p.ativo pode ser true/false/null)
+    const ativoBool = (p.ativo === false) ? false : true; // default: ativo
+    const statusOk =
+      !statusFiltro ||
+      (statusFiltro === "ativo" && ativoBool) ||
+      (statusFiltro === "inativo" && !ativoBool);
+
+    if(!nomeOk || !tipoOk || !statusOk) continue;
+
+    const m = calcMetricsForList(p);
+
+    const cmvOk = inRangeCMV(m.cmvPerc, cmvFaixa);
+    const margemOk = inRangeMargem(m.margem, margemFaixa);
+
+    if(!cmvOk || !margemOk) continue;
+
+    base.push({ p, m });
+  }
+
+  // 2) ordena
+  base.sort((a,b)=>{
+    if(sort === "az") return (a.p.nome||"").localeCompare(b.p.nome||"", "pt-BR");
+    if(sort === "cmv_desc") return (b.m.cmvPerc ?? -Infinity) - (a.m.cmvPerc ?? -Infinity);
+    if(sort === "margem_asc") return (a.m.margem ?? Infinity) - (b.m.margem ?? Infinity);
+    if(sort === "lucro_desc") return (b.m.lucro ?? -Infinity) - (a.m.lucro ?? -Infinity);
+    if(sort === "custo_desc") return (b.m.custoFinal ?? -Infinity) - (a.m.custoFinal ?? -Infinity);
+
+    // recent (padrão): usa created_at desc se existir, senão mantém ordem atual
+const da = Date.parse(a.p.created_at || "") || 0;
+const db = Date.parse(b.p.created_at || "") || 0;
+return db - da;
   });
+
+  // 3) salva só os pratos (render usa o cacheCMV como antes)
+  listaFiltrada = base.map(x => x.p);
 
   pageIndex = 0;
   cards.innerHTML = "";
@@ -1340,6 +1472,13 @@ filtroTipo.addEventListener("change", () => {
   filtroTipoSelecionado = filtroTipo.value;
   aplicarFiltros();
 });
+filtroStatus.addEventListener("change", aplicarFiltros);
+filtroCMV.addEventListener("change", aplicarFiltros);
+filtroMargem.addEventListener("change", aplicarFiltros);
+filtroSort.addEventListener("change", aplicarFiltros);
+
+
+  
 /* =====================================================
    MODAL
 ===================================================== */
