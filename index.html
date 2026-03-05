@@ -674,7 +674,8 @@ iframe{
 </div>
   <div class="main">
     <div class="header">
-
+      <span id="pageTitle">CB SYSTEMS® - Dashboard</span>
+      <button class="logout" onclick="logout()">Sair</button>
     </div>
     <iframe id="frame" src=""></iframe>
   </div>
@@ -735,7 +736,16 @@ document.querySelectorAll(".sidebar .icon").forEach(i=>{
 document.getElementById("moreMenu").classList.remove("open");
 document.getElementById("moreOverlay").classList.remove("open");
 document.querySelector(".more-btn").classList.remove("active");
-
+  const titles = {
+    "home.html": "CB SYSTEMS® - Dashboard",
+    "fichatecnica.html": "CB SYSTEMS® - Fichas Técnicas",
+    "ingredientes.html": "CB SYSTEMS® - Ingredientes",
+    "analiseficha.html": "CB SYSTEMS® - Análise de Fichas",
+    "config.html": "CB SYSTEMS® - Análise financeira",
+    "ingredientesexcel.html": "CB SYSTEMS® - Excel de Ingredientes",
+    "midias.html": "CB SYSTEMS® - Mídias do Cardápio",
+    "relatorios.html": "CB SYSTEMS® - Relatórios"
+  };
 
   document.getElementById("pageTitle").innerText = titles[page] || "CB SYSTEMS®";
 }
